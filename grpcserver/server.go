@@ -224,6 +224,18 @@ func (s *Server) LastSeen(ctx context.Context, req *talondbpb.LastSeenRequest) (
 	return out, nil
 }
 
+func (s *Server) LastWritten(ctx context.Context, req *talondbpb.LastWrittenRequest) (*talondbpb.LastWrittenResponse, error) {
+	t, ok, err := s.store.LastWritten(ctx, req.GetEntityId(), req.GetDocId())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := &talondbpb.LastWrittenResponse{Found: ok}
+	if ok {
+		out.AtUnixNanos = t.UnixNano()
+	}
+	return out, nil
+}
+
 func (s *Server) Ancestors(ctx context.Context, req *talondbpb.AncestorsRequest) (*talondbpb.StringList, error) {
 	chain, err := s.store.Ancestors(ctx, req.GetEntityId(), req.GetCategoryId())
 	if err != nil {

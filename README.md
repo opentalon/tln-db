@@ -19,7 +19,7 @@ talon-db
   │                       closure table, Welford running stats, absence
   ├── Public API       ✅ talondb.IndexedStore (Lookup, LookupPrefix,
   │                       LookupNumericRange, WindowQuery, GroupCount, Stats,
-  │                       LastSeen, Ancestors, Descendants)
+  │                       LastSeen, LastWritten, Ancestors, Descendants)
   ├── Composite RPCs   ✅ structured Query (Pattern/Predicate/Or/Not/FullText +
   │                       Aggregates + GroupBy), SequenceJoin, ClusterQuery
   ├── Streaming        ✅ Subscribe — server-streamed MutationEvents for
@@ -129,7 +129,7 @@ curl -s http://localhost:8080/v1/health
 
 | Group | Methods |
 |---|---|
-| DocumentStore | `Put`, `Get`, `Delete`, `BatchPut` |
+| DocumentStore | `Put`, `Get`, `Delete`, `BatchPut`, `LastWritten` (doc `updated_at`) |
 | Inverted lookup | `Lookup`, `LookupPrefix` |
 | Numeric range | `LookupNumericRange` |
 | Temporal | `WindowQuery` |

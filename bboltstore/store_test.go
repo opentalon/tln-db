@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	talondb "github.com/opentalon/talon-db"
 	"github.com/opentalon/talon-db/bboltstore"
@@ -58,4 +59,39 @@ func TestConcurrentPutAcrossEntities(t *testing.T) {
 		}(i)
 	}
 	wg.Wait()
+}
+
+func TestLastWrittenUsesUpdatedAt(t *testing.T) {
+	s := newStore(t)
+	ctx := context.Background()
+
+	t0 := time.Date(2026, 7, 2, 10, 0, 0, 0, time.UTC)
+	clock := t0
+	s.SetClock(func() time.Time { return clock })
+
+	if err := s.Put(ctx, "tenant-a", "doc-1", []byte(`{"n":1}`)); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	got, ok, err := s.LastWritten(ctx, "tenant-a", "doc-1")
+	if err != nil || !ok {
+		t.Fatalf("LastWritten: ok=%v err=%v", ok, err)
+	}
+	if !got.Equal(t0) {
+		t.Errorf("LastWritten = %v, want %v", got, t0)
+	}
+
+	// A later overwrite advances updated_at (last-asserted semantics).
+	clock = t0.Add(time.Hour)
+	if err := s.Put(ctx, "tenant-a", "doc-1", []byte(`{"n":2}`)); err != nil {
+		t.Fatalf("Put 2: %v", err)
+	}
+	got, _, _ = s.LastWritten(ctx, "tenant-a", "doc-1")
+	if !got.Equal(clock) {
+		t.Errorf("LastWritten after overwrite = %v, want %v", got, clock)
+	}
+
+	// Missing doc → found=false, no error.
+	if _, ok, err := s.LastWritten(ctx, "tenant-a", "nope"); err != nil || ok {
+		t.Errorf("LastWritten(missing): ok=%v err=%v, want false, nil", ok, err)
+	}
 }

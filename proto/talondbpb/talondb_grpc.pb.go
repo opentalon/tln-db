@@ -31,6 +31,7 @@ const (
 	TalonDBService_GroupCount_FullMethodName         = "/opentalon.talondb.v1.TalonDBService/GroupCount"
 	TalonDBService_Stats_FullMethodName              = "/opentalon.talondb.v1.TalonDBService/Stats"
 	TalonDBService_LastSeen_FullMethodName           = "/opentalon.talondb.v1.TalonDBService/LastSeen"
+	TalonDBService_LastWritten_FullMethodName        = "/opentalon.talondb.v1.TalonDBService/LastWritten"
 	TalonDBService_Ancestors_FullMethodName          = "/opentalon.talondb.v1.TalonDBService/Ancestors"
 	TalonDBService_Descendants_FullMethodName        = "/opentalon.talondb.v1.TalonDBService/Descendants"
 	TalonDBService_Query_FullMethodName              = "/opentalon.talondb.v1.TalonDBService/Query"
@@ -72,6 +73,10 @@ type TalonDBServiceClient interface {
 	GroupCount(ctx context.Context, in *GroupRequest, opts ...grpc.CallOption) (*GroupResponse, error)
 	Stats(ctx context.Context, in *StatsRequest, opts ...grpc.CallOption) (*StatsResponse, error)
 	LastSeen(ctx context.Context, in *LastSeenRequest, opts ...grpc.CallOption) (*LastSeenResponse, error)
+	// LastWritten returns a document's updated_at time (doc-level
+	// granularity). Backs the FactStore Freshness capability used for fact
+	// staleness / the enrich block.
+	LastWritten(ctx context.Context, in *LastWrittenRequest, opts ...grpc.CallOption) (*LastWrittenResponse, error)
 	Ancestors(ctx context.Context, in *AncestorsRequest, opts ...grpc.CallOption) (*StringList, error)
 	Descendants(ctx context.Context, in *DescendantsRequest, opts ...grpc.CallOption) (*DocIDList, error)
 	// Query is the server-side composer for structured queries: anchor
@@ -222,6 +227,16 @@ func (c *talonDBServiceClient) LastSeen(ctx context.Context, in *LastSeenRequest
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LastSeenResponse)
 	err := c.cc.Invoke(ctx, TalonDBService_LastSeen_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *talonDBServiceClient) LastWritten(ctx context.Context, in *LastWrittenRequest, opts ...grpc.CallOption) (*LastWrittenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LastWrittenResponse)
+	err := c.cc.Invoke(ctx, TalonDBService_LastWritten_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -384,6 +399,10 @@ type TalonDBServiceServer interface {
 	GroupCount(context.Context, *GroupRequest) (*GroupResponse, error)
 	Stats(context.Context, *StatsRequest) (*StatsResponse, error)
 	LastSeen(context.Context, *LastSeenRequest) (*LastSeenResponse, error)
+	// LastWritten returns a document's updated_at time (doc-level
+	// granularity). Backs the FactStore Freshness capability used for fact
+	// staleness / the enrich block.
+	LastWritten(context.Context, *LastWrittenRequest) (*LastWrittenResponse, error)
 	Ancestors(context.Context, *AncestorsRequest) (*StringList, error)
 	Descendants(context.Context, *DescendantsRequest) (*DocIDList, error)
 	// Query is the server-side composer for structured queries: anchor
@@ -462,6 +481,9 @@ func (UnimplementedTalonDBServiceServer) Stats(context.Context, *StatsRequest) (
 }
 func (UnimplementedTalonDBServiceServer) LastSeen(context.Context, *LastSeenRequest) (*LastSeenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method LastSeen not implemented")
+}
+func (UnimplementedTalonDBServiceServer) LastWritten(context.Context, *LastWrittenRequest) (*LastWrittenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LastWritten not implemented")
 }
 func (UnimplementedTalonDBServiceServer) Ancestors(context.Context, *AncestorsRequest) (*StringList, error) {
 	return nil, status.Error(codes.Unimplemented, "method Ancestors not implemented")
@@ -714,6 +736,24 @@ func _TalonDBService_LastSeen_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TalonDBServiceServer).LastSeen(ctx, req.(*LastSeenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TalonDBService_LastWritten_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LastWrittenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TalonDBServiceServer).LastWritten(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TalonDBService_LastWritten_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TalonDBServiceServer).LastWritten(ctx, req.(*LastWrittenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -977,6 +1017,10 @@ var TalonDBService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LastSeen",
 			Handler:    _TalonDBService_LastSeen_Handler,
+		},
+		{
+			MethodName: "LastWritten",
+			Handler:    _TalonDBService_LastWritten_Handler,
 		},
 		{
 			MethodName: "Ancestors",

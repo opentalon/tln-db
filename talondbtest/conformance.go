@@ -43,6 +43,7 @@ import (
 	"errors"
 	"sort"
 	"testing"
+	"time"
 
 	talondb "github.com/opentalon/talon-db"
 )
@@ -71,6 +72,7 @@ func Suite(t *testing.T, factory Factory) {
 		{"TenantIsolation", testTenantIsolation},
 		{"EmptyEntityIDRejected", testEmptyEntity},
 		{"EmptyDocIDRejected", testEmptyDocID},
+		{"LastWrittenTracksPut", testLastWritten},
 	}
 	for _, c := range cases {
 		c := c
@@ -331,4 +333,37 @@ func equalStrings(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// testLastWritten verifies the Freshness contract: a written doc reports
+// a last-written time in [before, after]; a missing doc reports found ==
+// false; and a deleted doc no longer reports a time.
+func testLastWritten(t *testing.T, factory Factory) {
+	s := factory(t)
+	ctx := context.Background()
+
+	if _, ok, err := s.LastWritten(ctx, "tenant-a", "missing"); err != nil || ok {
+		t.Fatalf("LastWritten(missing): got ok=%v err=%v, want ok=false, nil", ok, err)
+	}
+
+	before := time.Now().Add(-time.Second)
+	if err := s.Put(ctx, "tenant-a", "doc-1", []byte(`{"n":1}`)); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	after := time.Now().Add(time.Second)
+
+	got, ok, err := s.LastWritten(ctx, "tenant-a", "doc-1")
+	if err != nil || !ok {
+		t.Fatalf("LastWritten after Put: got ok=%v err=%v, want ok=true, nil", ok, err)
+	}
+	if got.Before(before) || got.After(after) {
+		t.Errorf("LastWritten time %v outside [%v, %v]", got, before, after)
+	}
+
+	if err := s.Delete(ctx, "tenant-a", "doc-1"); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	if _, ok, _ := s.LastWritten(ctx, "tenant-a", "doc-1"); ok {
+		t.Error("LastWritten after Delete: got ok=true, want false")
+	}
 }
