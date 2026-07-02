@@ -57,6 +57,55 @@ func (s *Store) Events() *talondb.EventEmitter {
 	return &s.events
 }
 
+// SetClock overrides the clock used to stamp document created_at /
+// updated_at times. Intended for tests that need deterministic
+// timestamps; production leaves the default time.Now.
+func (s *Store) SetClock(now func() time.Time) {
+	if now == nil {
+		now = time.Now
+	}
+	s.now = now
+}
+
+// LastWritten reports when the document at (entityID, docID) was last
+// written, from its stored updated_at metadata. The bool is false when
+// no such document exists. Granularity is per-document: every Put bumps
+// updated_at (even a no-op overwrite), which is the "last asserted"
+// semantics fact-freshness needs.
+func (s *Store) LastWritten(ctx context.Context, entityID, docID string) (time.Time, bool, error) {
+	if err := validateIDs(entityID, docID); err != nil {
+		return time.Time{}, false, err
+	}
+	if err := ctx.Err(); err != nil {
+		return time.Time{}, false, err
+	}
+	var (
+		out   time.Time
+		found bool
+	)
+	err := s.db.View(func(tx *bolt.Tx) error {
+		mb := tx.Bucket([]byte(metaBucketPrefix + entityID))
+		if mb == nil {
+			return nil
+		}
+		raw := mb.Get([]byte(docID))
+		if raw == nil {
+			return nil
+		}
+		var m docMeta
+		if err := json.Unmarshal(raw, &m); err != nil {
+			return fmt.Errorf("bboltstore: decode meta for %q: %w", docID, err)
+		}
+		out = time.Unix(0, m.UpdatedAt).UTC()
+		found = true
+		return nil
+	})
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	return out, found, nil
+}
+
 // Close closes the underlying bbolt database.
 func (s *Store) Close() error {
 	return s.db.Close()

@@ -31,6 +31,10 @@ service TalonDBService {
   rpc GroupCount(GroupRequest) returns (GroupResponse);
   rpc Stats(StatsRequest) returns (StatsResponse);
   rpc LastSeen(LastSeenRequest) returns (LastSeenResponse);
+  // LastWritten returns a document's updated_at time (doc-level
+  // granularity). Backs the FactStore Freshness capability used for fact
+  // staleness / the enrich block.
+  rpc LastWritten(LastWrittenRequest) returns (LastWrittenResponse);
   rpc Ancestors(AncestorsRequest) returns (StringList);
   rpc Descendants(DescendantsRequest) returns (DocIDList);
 
@@ -190,6 +194,16 @@ message LastSeenRequest {
 }
 
 message LastSeenResponse {
+  int64 at_unix_nanos = 1;
+  bool  found         = 2;
+}
+
+message LastWrittenRequest {
+  string entity_id = 1;
+  string doc_id    = 2;
+}
+
+message LastWrittenResponse {
   int64 at_unix_nanos = 1;
   bool  found         = 2;
 }

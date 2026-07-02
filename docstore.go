@@ -3,6 +3,7 @@ package talondb
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 // ErrNotFound is returned by Get when no document exists for the given
@@ -45,4 +46,11 @@ type DocumentStore interface {
 	// only valid for the duration of that call; copy it if you need to
 	// retain it.
 	Scan(ctx context.Context, entityID string, fn func(docID string, doc []byte) bool) error
+
+	// LastWritten reports when the document at (entityID, docID) was last
+	// written, from its updated_at metadata. The bool is false when no
+	// such document exists. Granularity is per-document (every Put bumps
+	// updated_at), which is the "last asserted" semantics fact-freshness
+	// consumers such as the enrich block rely on.
+	LastWritten(ctx context.Context, entityID, docID string) (time.Time, bool, error)
 }
