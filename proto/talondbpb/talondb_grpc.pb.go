@@ -35,6 +35,7 @@ const (
 	TalonDBService_Ancestors_FullMethodName          = "/opentalon.talondb.v1.TalonDBService/Ancestors"
 	TalonDBService_Descendants_FullMethodName        = "/opentalon.talondb.v1.TalonDBService/Descendants"
 	TalonDBService_Query_FullMethodName              = "/opentalon.talondb.v1.TalonDBService/Query"
+	TalonDBService_QueryAsOf_FullMethodName          = "/opentalon.talondb.v1.TalonDBService/QueryAsOf"
 	TalonDBService_SequenceJoin_FullMethodName       = "/opentalon.talondb.v1.TalonDBService/SequenceJoin"
 	TalonDBService_ClusterQuery_FullMethodName       = "/opentalon.talondb.v1.TalonDBService/ClusterQuery"
 	TalonDBService_VectorInsert_FullMethodName       = "/opentalon.talondb.v1.TalonDBService/VectorInsert"
@@ -85,6 +86,13 @@ type TalonDBServiceClient interface {
 	// of replicating the talon-language adapter's composition logic.
 	// Supported clauses: Pattern, Predicate, Or, Not, FullText.
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	// QueryAsOf runs the same structured composer as Query but against a
+	// reconstruction of the store as it existed at at_unix_nanos. Each
+	// document is rebuilt from its version history (latest version whose
+	// write time is <= the timestamp; documents created later, or deleted
+	// by then, are absent). Backs the FactStore TimeTraveler capability
+	// that powers `was <condition> N <unit> ago` detect conditions.
+	QueryAsOf(ctx context.Context, in *QueryAsOfRequest, opts ...grpc.CallOption) (*QueryResponse, error)
 	// SequenceJoin scans temporal indexes for one or more items and
 	// returns the items whose event log contains the requested step
 	// sequence in order, with total span at most window_nanos. Empty
@@ -273,6 +281,16 @@ func (c *talonDBServiceClient) Query(ctx context.Context, in *QueryRequest, opts
 	return out, nil
 }
 
+func (c *talonDBServiceClient) QueryAsOf(ctx context.Context, in *QueryAsOfRequest, opts ...grpc.CallOption) (*QueryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(QueryResponse)
+	err := c.cc.Invoke(ctx, TalonDBService_QueryAsOf_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *talonDBServiceClient) SequenceJoin(ctx context.Context, in *SequenceJoinRequest, opts ...grpc.CallOption) (*SequenceJoinResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SequenceJoinResponse)
@@ -411,6 +429,13 @@ type TalonDBServiceServer interface {
 	// of replicating the talon-language adapter's composition logic.
 	// Supported clauses: Pattern, Predicate, Or, Not, FullText.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	// QueryAsOf runs the same structured composer as Query but against a
+	// reconstruction of the store as it existed at at_unix_nanos. Each
+	// document is rebuilt from its version history (latest version whose
+	// write time is <= the timestamp; documents created later, or deleted
+	// by then, are absent). Backs the FactStore TimeTraveler capability
+	// that powers `was <condition> N <unit> ago` detect conditions.
+	QueryAsOf(context.Context, *QueryAsOfRequest) (*QueryResponse, error)
 	// SequenceJoin scans temporal indexes for one or more items and
 	// returns the items whose event log contains the requested step
 	// sequence in order, with total span at most window_nanos. Empty
@@ -493,6 +518,9 @@ func (UnimplementedTalonDBServiceServer) Descendants(context.Context, *Descendan
 }
 func (UnimplementedTalonDBServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Query not implemented")
+}
+func (UnimplementedTalonDBServiceServer) QueryAsOf(context.Context, *QueryAsOfRequest) (*QueryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method QueryAsOf not implemented")
 }
 func (UnimplementedTalonDBServiceServer) SequenceJoin(context.Context, *SequenceJoinRequest) (*SequenceJoinResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SequenceJoin not implemented")
@@ -812,6 +840,24 @@ func _TalonDBService_Query_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TalonDBService_QueryAsOf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAsOfRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TalonDBServiceServer).QueryAsOf(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TalonDBService_QueryAsOf_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TalonDBServiceServer).QueryAsOf(ctx, req.(*QueryAsOfRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TalonDBService_SequenceJoin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SequenceJoinRequest)
 	if err := dec(in); err != nil {
@@ -1033,6 +1079,10 @@ var TalonDBService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Query",
 			Handler:    _TalonDBService_Query_Handler,
+		},
+		{
+			MethodName: "QueryAsOf",
+			Handler:    _TalonDBService_QueryAsOf_Handler,
 		},
 		{
 			MethodName: "SequenceJoin",

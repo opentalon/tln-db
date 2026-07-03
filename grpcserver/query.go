@@ -3,6 +3,7 @@ package grpcserver
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/opentalon/talon-db/bboltstore"
 	"github.com/opentalon/talon-db/proto/talondbpb"
@@ -45,6 +46,40 @@ func (s *Server) Query(ctx context.Context, req *talondbpb.QueryRequest) (*talon
 	if err != nil {
 		return nil, mapError(err)
 	}
+	return encodeQueryResponse(rows)
+}
+
+// QueryAsOf handles the time-travel query RPC. It shares Query's clause
+// decoding and row encoding, delegating to the store's history-backed
+// composer at the requested instant.
+func (s *Server) QueryAsOf(ctx context.Context, req *talondbpb.QueryAsOfRequest) (*talondbpb.QueryResponse, error) {
+	bbolt, ok := s.store.(*bboltstore.Store)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "talondb: structured QueryAsOf requires a bboltstore backend")
+	}
+	clauses, err := decodeQueryClauses(req.GetWhere())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	aggs, err := decodeAggregates(req.GetAggregates())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	rows, err := bbolt.QueryAsOf(ctx, bboltstore.QueryRequest{
+		EntityID:   req.GetEntityId(),
+		Find:       req.GetFind(),
+		Where:      clauses,
+		Aggregates: aggs,
+		GroupBy:    req.GetGroupBy(),
+	}, time.Unix(0, req.GetAtUnixNanos()))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return encodeQueryResponse(rows)
+}
+
+// encodeQueryResponse projects composer rows into the proto response.
+func encodeQueryResponse(rows []bboltstore.QueryRow) (*talondbpb.QueryResponse, error) {
 	out := &talondbpb.QueryResponse{Rows: make([]*talondbpb.QueryRow, 0, len(rows))}
 	for _, row := range rows {
 		values := make([]*structpb.Value, 0, len(row))

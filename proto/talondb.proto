@@ -45,6 +45,14 @@ service TalonDBService {
   // Supported clauses: Pattern, Predicate, Or, Not, FullText.
   rpc Query(QueryRequest) returns (QueryResponse);
 
+  // QueryAsOf runs the same structured composer as Query but against a
+  // reconstruction of the store as it existed at at_unix_nanos. Each
+  // document is rebuilt from its version history (latest version whose
+  // write time is <= the timestamp; documents created later, or deleted
+  // by then, are absent). Backs the FactStore TimeTraveler capability
+  // that powers `was <condition> N <unit> ago` detect conditions.
+  rpc QueryAsOf(QueryAsOfRequest) returns (QueryResponse);
+
   // SequenceJoin scans temporal indexes for one or more items and
   // returns the items whose event log contains the requested step
   // sequence in order, with total span at most window_nanos. Empty
@@ -417,4 +425,20 @@ message VectorScope {
   int32        dim    = 2;  // locked on first insert
   int32        count  = 3;  // live (non-tombstoned) vector count
   VectorMetric metric = 4;
+}
+
+// ---------- Time-travel query (RPC `QueryAsOf`) ----------
+
+// QueryAsOfRequest mirrors QueryRequest with an as-of timestamp. The
+// composer evaluates the same where/aggregate clauses against each
+// document's state at at_unix_nanos rather than its current state.
+// Appended at the end of the message list so inserting it doesn't
+// renumber the generated message-type table.
+message QueryAsOfRequest {
+  string entity_id              = 1;
+  repeated string find          = 2;
+  repeated Clause where         = 3;
+  repeated Aggregate aggregates = 4;
+  repeated string group_by      = 5;
+  int64 at_unix_nanos           = 6;  // snapshot instant (Unix nanoseconds)
 }

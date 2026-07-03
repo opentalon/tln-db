@@ -213,12 +213,16 @@ func (s *Store) Delete(ctx context.Context, entityID, docID string) error {
 			if err := indexDocOnDelete(tx, entityID, docID, oldDoc); err != nil {
 				return err
 			}
+			delAt := s.now().UnixNano()
+			if err := appendDocHistory(tx, entityID, docID, docVersion{At: delAt, Deleted: true}); err != nil {
+				return err
+			}
 			pending = &talondb.MutationEvent{
 				Kind:        talondb.EventRetract,
 				EntityID:    entityID,
 				DocID:       docID,
 				OldDoc:      oldDoc,
-				AtUnixNanos: s.now().UnixNano(),
+				AtUnixNanos: delAt,
 			}
 		}
 		return nil
@@ -356,6 +360,9 @@ func (s *Store) putInTxEvents(tx *bolt.Tx, entityID, docID string, doc []byte) (
 		return nil, err
 	}
 	if err := indexDocOnPut(tx, entityID, docID, oldDoc, doc); err != nil {
+		return nil, err
+	}
+	if err := appendDocHistory(tx, entityID, docID, docVersion{At: now, Data: append([]byte(nil), doc...)}); err != nil {
 		return nil, err
 	}
 
