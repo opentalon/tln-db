@@ -3255,6 +3255,95 @@ func (x *VectorScope) GetMetric() VectorMetric {
 	return VectorMetric_VECTOR_METRIC_UNSPECIFIED
 }
 
+// QueryAsOfRequest mirrors QueryRequest with an as-of timestamp. The
+// composer evaluates the same where/aggregate clauses against each
+// document's state at at_unix_nanos rather than its current state.
+// Appended at the end of the message list so inserting it doesn't
+// renumber the generated message-type table.
+type QueryAsOfRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EntityId      string                 `protobuf:"bytes,1,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	Find          []string               `protobuf:"bytes,2,rep,name=find,proto3" json:"find,omitempty"`
+	Where         []*Clause              `protobuf:"bytes,3,rep,name=where,proto3" json:"where,omitempty"`
+	Aggregates    []*Aggregate           `protobuf:"bytes,4,rep,name=aggregates,proto3" json:"aggregates,omitempty"`
+	GroupBy       []string               `protobuf:"bytes,5,rep,name=group_by,json=groupBy,proto3" json:"group_by,omitempty"`
+	AtUnixNanos   int64                  `protobuf:"varint,6,opt,name=at_unix_nanos,json=atUnixNanos,proto3" json:"at_unix_nanos,omitempty"` // snapshot instant (Unix nanoseconds)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAsOfRequest) Reset() {
+	*x = QueryAsOfRequest{}
+	mi := &file_proto_talondb_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAsOfRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAsOfRequest) ProtoMessage() {}
+
+func (x *QueryAsOfRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_talondb_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAsOfRequest.ProtoReflect.Descriptor instead.
+func (*QueryAsOfRequest) Descriptor() ([]byte, []int) {
+	return file_proto_talondb_proto_rawDescGZIP(), []int{54}
+}
+
+func (x *QueryAsOfRequest) GetEntityId() string {
+	if x != nil {
+		return x.EntityId
+	}
+	return ""
+}
+
+func (x *QueryAsOfRequest) GetFind() []string {
+	if x != nil {
+		return x.Find
+	}
+	return nil
+}
+
+func (x *QueryAsOfRequest) GetWhere() []*Clause {
+	if x != nil {
+		return x.Where
+	}
+	return nil
+}
+
+func (x *QueryAsOfRequest) GetAggregates() []*Aggregate {
+	if x != nil {
+		return x.Aggregates
+	}
+	return nil
+}
+
+func (x *QueryAsOfRequest) GetGroupBy() []string {
+	if x != nil {
+		return x.GroupBy
+	}
+	return nil
+}
+
+func (x *QueryAsOfRequest) GetAtUnixNanos() int64 {
+	if x != nil {
+		return x.AtUnixNanos
+	}
+	return 0
+}
+
 var File_proto_talondb_proto protoreflect.FileDescriptor
 
 const file_proto_talondb_proto_rawDesc = "" +
@@ -3461,7 +3550,16 @@ const file_proto_talondb_proto_rawDesc = "" +
 	"\x05scope\x18\x01 \x01(\tR\x05scope\x12\x10\n" +
 	"\x03dim\x18\x02 \x01(\x05R\x03dim\x12\x14\n" +
 	"\x05count\x18\x03 \x01(\x05R\x05count\x12:\n" +
-	"\x06metric\x18\x04 \x01(\x0e2\".opentalon.talondb.v1.VectorMetricR\x06metric*\x99\x01\n" +
+	"\x06metric\x18\x04 \x01(\x0e2\".opentalon.talondb.v1.VectorMetricR\x06metric\"\xf7\x01\n" +
+	"\x10QueryAsOfRequest\x12\x1b\n" +
+	"\tentity_id\x18\x01 \x01(\tR\bentityId\x12\x12\n" +
+	"\x04find\x18\x02 \x03(\tR\x04find\x122\n" +
+	"\x05where\x18\x03 \x03(\v2\x1c.opentalon.talondb.v1.ClauseR\x05where\x12?\n" +
+	"\n" +
+	"aggregates\x18\x04 \x03(\v2\x1f.opentalon.talondb.v1.AggregateR\n" +
+	"aggregates\x12\x19\n" +
+	"\bgroup_by\x18\x05 \x03(\tR\agroupBy\x12\"\n" +
+	"\rat_unix_nanos\x18\x06 \x01(\x03R\vatUnixNanos*\x99\x01\n" +
 	"\x11MutationEventKind\x12#\n" +
 	"\x1fMUTATION_EVENT_KIND_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aMUTATION_EVENT_KIND_ASSERT\x10\x01\x12\x1e\n" +
@@ -3470,7 +3568,7 @@ const file_proto_talondb_proto_rawDesc = "" +
 	"\fVectorMetric\x12\x1d\n" +
 	"\x19VECTOR_METRIC_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14VECTOR_METRIC_COSINE\x10\x01\x12\x1b\n" +
-	"\x17VECTOR_METRIC_EUCLIDEAN\x10\x022\xcd\x10\n" +
+	"\x17VECTOR_METRIC_EUCLIDEAN\x10\x022\xa7\x11\n" +
 	"\x0eTalonDBService\x12?\n" +
 	"\x03Put\x12 .opentalon.talondb.v1.PutRequest\x1a\x16.google.protobuf.Empty\x12J\n" +
 	"\x03Get\x12 .opentalon.talondb.v1.GetRequest\x1a!.opentalon.talondb.v1.GetResponse\x12E\n" +
@@ -3487,7 +3585,8 @@ const file_proto_talondb_proto_rawDesc = "" +
 	"\vLastWritten\x12(.opentalon.talondb.v1.LastWrittenRequest\x1a).opentalon.talondb.v1.LastWrittenResponse\x12U\n" +
 	"\tAncestors\x12&.opentalon.talondb.v1.AncestorsRequest\x1a .opentalon.talondb.v1.StringList\x12X\n" +
 	"\vDescendants\x12(.opentalon.talondb.v1.DescendantsRequest\x1a\x1f.opentalon.talondb.v1.DocIDList\x12P\n" +
-	"\x05Query\x12\".opentalon.talondb.v1.QueryRequest\x1a#.opentalon.talondb.v1.QueryResponse\x12e\n" +
+	"\x05Query\x12\".opentalon.talondb.v1.QueryRequest\x1a#.opentalon.talondb.v1.QueryResponse\x12X\n" +
+	"\tQueryAsOf\x12&.opentalon.talondb.v1.QueryAsOfRequest\x1a#.opentalon.talondb.v1.QueryResponse\x12e\n" +
 	"\fSequenceJoin\x12).opentalon.talondb.v1.SequenceJoinRequest\x1a*.opentalon.talondb.v1.SequenceJoinResponse\x12e\n" +
 	"\fClusterQuery\x12).opentalon.talondb.v1.ClusterQueryRequest\x1a*.opentalon.talondb.v1.ClusterQueryResponse\x12Q\n" +
 	"\fVectorInsert\x12).opentalon.talondb.v1.VectorInsertRequest\x1a\x16.google.protobuf.Empty\x12e\n" +
@@ -3511,7 +3610,7 @@ func file_proto_talondb_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_talondb_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_proto_talondb_proto_msgTypes = make([]protoimpl.MessageInfo, 54)
+var file_proto_talondb_proto_msgTypes = make([]protoimpl.MessageInfo, 55)
 var file_proto_talondb_proto_goTypes = []any{
 	(MutationEventKind)(0),           // 0: opentalon.talondb.v1.MutationEventKind
 	(VectorMetric)(0),                // 1: opentalon.talondb.v1.VectorMetric
@@ -3569,8 +3668,9 @@ var file_proto_talondb_proto_goTypes = []any{
 	(*VectorListScopesRequest)(nil),  // 53: opentalon.talondb.v1.VectorListScopesRequest
 	(*VectorListScopesResponse)(nil), // 54: opentalon.talondb.v1.VectorListScopesResponse
 	(*VectorScope)(nil),              // 55: opentalon.talondb.v1.VectorScope
-	(*structpb.Value)(nil),           // 56: google.protobuf.Value
-	(*emptypb.Empty)(nil),            // 57: google.protobuf.Empty
+	(*QueryAsOfRequest)(nil),         // 56: opentalon.talondb.v1.QueryAsOfRequest
+	(*structpb.Value)(nil),           // 57: google.protobuf.Value
+	(*emptypb.Empty)(nil),            // 58: google.protobuf.Empty
 }
 var file_proto_talondb_proto_depIdxs = []int32{
 	8,  // 0: opentalon.talondb.v1.BatchPutRequest.entries:type_name -> opentalon.talondb.v1.BatchPutEntry
@@ -3580,7 +3680,7 @@ var file_proto_talondb_proto_depIdxs = []int32{
 	30, // 4: opentalon.talondb.v1.QueryRequest.aggregates:type_name -> opentalon.talondb.v1.Aggregate
 	40, // 5: opentalon.talondb.v1.Aggregate.over:type_name -> opentalon.talondb.v1.Term
 	32, // 6: opentalon.talondb.v1.QueryResponse.rows:type_name -> opentalon.talondb.v1.QueryRow
-	56, // 7: opentalon.talondb.v1.QueryRow.values:type_name -> google.protobuf.Value
+	57, // 7: opentalon.talondb.v1.QueryRow.values:type_name -> google.protobuf.Value
 	34, // 8: opentalon.talondb.v1.Clause.pattern:type_name -> opentalon.talondb.v1.Pattern
 	35, // 9: opentalon.talondb.v1.Clause.predicate:type_name -> opentalon.talondb.v1.Predicate
 	36, // 10: opentalon.talondb.v1.Clause.or:type_name -> opentalon.talondb.v1.Or
@@ -3594,7 +3694,7 @@ var file_proto_talondb_proto_depIdxs = []int32{
 	33, // 18: opentalon.talondb.v1.ClauseList.clauses:type_name -> opentalon.talondb.v1.Clause
 	33, // 19: opentalon.talondb.v1.Not.body:type_name -> opentalon.talondb.v1.Clause
 	40, // 20: opentalon.talondb.v1.FullText.entity:type_name -> opentalon.talondb.v1.Term
-	56, // 21: opentalon.talondb.v1.Term.literal:type_name -> google.protobuf.Value
+	57, // 21: opentalon.talondb.v1.Term.literal:type_name -> google.protobuf.Value
 	43, // 22: opentalon.talondb.v1.SequenceJoinResponse.matches:type_name -> opentalon.talondb.v1.SequenceMatch
 	14, // 23: opentalon.talondb.v1.SequenceMatch.events:type_name -> opentalon.talondb.v1.TemporalEvent
 	46, // 24: opentalon.talondb.v1.ClusterQueryResponse.clusters:type_name -> opentalon.talondb.v1.TemporalCluster
@@ -3603,59 +3703,63 @@ var file_proto_talondb_proto_depIdxs = []int32{
 	50, // 27: opentalon.talondb.v1.VectorSearchResponse.hits:type_name -> opentalon.talondb.v1.VectorHit
 	55, // 28: opentalon.talondb.v1.VectorListScopesResponse.scopes:type_name -> opentalon.talondb.v1.VectorScope
 	1,  // 29: opentalon.talondb.v1.VectorScope.metric:type_name -> opentalon.talondb.v1.VectorMetric
-	4,  // 30: opentalon.talondb.v1.TalonDBService.Put:input_type -> opentalon.talondb.v1.PutRequest
-	5,  // 31: opentalon.talondb.v1.TalonDBService.Get:input_type -> opentalon.talondb.v1.GetRequest
-	7,  // 32: opentalon.talondb.v1.TalonDBService.Delete:input_type -> opentalon.talondb.v1.DeleteRequest
-	9,  // 33: opentalon.talondb.v1.TalonDBService.BatchPut:input_type -> opentalon.talondb.v1.BatchPutRequest
-	10, // 34: opentalon.talondb.v1.TalonDBService.Lookup:input_type -> opentalon.talondb.v1.LookupRequest
-	11, // 35: opentalon.talondb.v1.TalonDBService.LookupPrefix:input_type -> opentalon.talondb.v1.LookupPrefixRequest
-	12, // 36: opentalon.talondb.v1.TalonDBService.LookupNumericRange:input_type -> opentalon.talondb.v1.NumericRangeRequest
-	13, // 37: opentalon.talondb.v1.TalonDBService.WindowQuery:input_type -> opentalon.talondb.v1.WindowRequest
-	16, // 38: opentalon.talondb.v1.TalonDBService.GroupCount:input_type -> opentalon.talondb.v1.GroupRequest
-	18, // 39: opentalon.talondb.v1.TalonDBService.Stats:input_type -> opentalon.talondb.v1.StatsRequest
-	20, // 40: opentalon.talondb.v1.TalonDBService.LastSeen:input_type -> opentalon.talondb.v1.LastSeenRequest
-	22, // 41: opentalon.talondb.v1.TalonDBService.LastWritten:input_type -> opentalon.talondb.v1.LastWrittenRequest
-	24, // 42: opentalon.talondb.v1.TalonDBService.Ancestors:input_type -> opentalon.talondb.v1.AncestorsRequest
-	25, // 43: opentalon.talondb.v1.TalonDBService.Descendants:input_type -> opentalon.talondb.v1.DescendantsRequest
-	29, // 44: opentalon.talondb.v1.TalonDBService.Query:input_type -> opentalon.talondb.v1.QueryRequest
-	41, // 45: opentalon.talondb.v1.TalonDBService.SequenceJoin:input_type -> opentalon.talondb.v1.SequenceJoinRequest
-	44, // 46: opentalon.talondb.v1.TalonDBService.ClusterQuery:input_type -> opentalon.talondb.v1.ClusterQueryRequest
-	47, // 47: opentalon.talondb.v1.TalonDBService.VectorInsert:input_type -> opentalon.talondb.v1.VectorInsertRequest
-	48, // 48: opentalon.talondb.v1.TalonDBService.VectorSearch:input_type -> opentalon.talondb.v1.VectorSearchRequest
-	51, // 49: opentalon.talondb.v1.TalonDBService.VectorDelete:input_type -> opentalon.talondb.v1.VectorDeleteRequest
-	52, // 50: opentalon.talondb.v1.TalonDBService.VectorDropScope:input_type -> opentalon.talondb.v1.VectorDropScopeRequest
-	53, // 51: opentalon.talondb.v1.TalonDBService.VectorListScopes:input_type -> opentalon.talondb.v1.VectorListScopesRequest
-	27, // 52: opentalon.talondb.v1.TalonDBService.Subscribe:input_type -> opentalon.talondb.v1.SubscribeRequest
-	57, // 53: opentalon.talondb.v1.TalonDBService.Health:input_type -> google.protobuf.Empty
-	57, // 54: opentalon.talondb.v1.TalonDBService.Put:output_type -> google.protobuf.Empty
-	6,  // 55: opentalon.talondb.v1.TalonDBService.Get:output_type -> opentalon.talondb.v1.GetResponse
-	57, // 56: opentalon.talondb.v1.TalonDBService.Delete:output_type -> google.protobuf.Empty
-	57, // 57: opentalon.talondb.v1.TalonDBService.BatchPut:output_type -> google.protobuf.Empty
-	2,  // 58: opentalon.talondb.v1.TalonDBService.Lookup:output_type -> opentalon.talondb.v1.DocIDList
-	2,  // 59: opentalon.talondb.v1.TalonDBService.LookupPrefix:output_type -> opentalon.talondb.v1.DocIDList
-	2,  // 60: opentalon.talondb.v1.TalonDBService.LookupNumericRange:output_type -> opentalon.talondb.v1.DocIDList
-	15, // 61: opentalon.talondb.v1.TalonDBService.WindowQuery:output_type -> opentalon.talondb.v1.WindowResponse
-	17, // 62: opentalon.talondb.v1.TalonDBService.GroupCount:output_type -> opentalon.talondb.v1.GroupResponse
-	19, // 63: opentalon.talondb.v1.TalonDBService.Stats:output_type -> opentalon.talondb.v1.StatsResponse
-	21, // 64: opentalon.talondb.v1.TalonDBService.LastSeen:output_type -> opentalon.talondb.v1.LastSeenResponse
-	23, // 65: opentalon.talondb.v1.TalonDBService.LastWritten:output_type -> opentalon.talondb.v1.LastWrittenResponse
-	3,  // 66: opentalon.talondb.v1.TalonDBService.Ancestors:output_type -> opentalon.talondb.v1.StringList
-	2,  // 67: opentalon.talondb.v1.TalonDBService.Descendants:output_type -> opentalon.talondb.v1.DocIDList
-	31, // 68: opentalon.talondb.v1.TalonDBService.Query:output_type -> opentalon.talondb.v1.QueryResponse
-	42, // 69: opentalon.talondb.v1.TalonDBService.SequenceJoin:output_type -> opentalon.talondb.v1.SequenceJoinResponse
-	45, // 70: opentalon.talondb.v1.TalonDBService.ClusterQuery:output_type -> opentalon.talondb.v1.ClusterQueryResponse
-	57, // 71: opentalon.talondb.v1.TalonDBService.VectorInsert:output_type -> google.protobuf.Empty
-	49, // 72: opentalon.talondb.v1.TalonDBService.VectorSearch:output_type -> opentalon.talondb.v1.VectorSearchResponse
-	57, // 73: opentalon.talondb.v1.TalonDBService.VectorDelete:output_type -> google.protobuf.Empty
-	57, // 74: opentalon.talondb.v1.TalonDBService.VectorDropScope:output_type -> google.protobuf.Empty
-	54, // 75: opentalon.talondb.v1.TalonDBService.VectorListScopes:output_type -> opentalon.talondb.v1.VectorListScopesResponse
-	28, // 76: opentalon.talondb.v1.TalonDBService.Subscribe:output_type -> opentalon.talondb.v1.MutationEvent
-	26, // 77: opentalon.talondb.v1.TalonDBService.Health:output_type -> opentalon.talondb.v1.HealthResponse
-	54, // [54:78] is the sub-list for method output_type
-	30, // [30:54] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	33, // 30: opentalon.talondb.v1.QueryAsOfRequest.where:type_name -> opentalon.talondb.v1.Clause
+	30, // 31: opentalon.talondb.v1.QueryAsOfRequest.aggregates:type_name -> opentalon.talondb.v1.Aggregate
+	4,  // 32: opentalon.talondb.v1.TalonDBService.Put:input_type -> opentalon.talondb.v1.PutRequest
+	5,  // 33: opentalon.talondb.v1.TalonDBService.Get:input_type -> opentalon.talondb.v1.GetRequest
+	7,  // 34: opentalon.talondb.v1.TalonDBService.Delete:input_type -> opentalon.talondb.v1.DeleteRequest
+	9,  // 35: opentalon.talondb.v1.TalonDBService.BatchPut:input_type -> opentalon.talondb.v1.BatchPutRequest
+	10, // 36: opentalon.talondb.v1.TalonDBService.Lookup:input_type -> opentalon.talondb.v1.LookupRequest
+	11, // 37: opentalon.talondb.v1.TalonDBService.LookupPrefix:input_type -> opentalon.talondb.v1.LookupPrefixRequest
+	12, // 38: opentalon.talondb.v1.TalonDBService.LookupNumericRange:input_type -> opentalon.talondb.v1.NumericRangeRequest
+	13, // 39: opentalon.talondb.v1.TalonDBService.WindowQuery:input_type -> opentalon.talondb.v1.WindowRequest
+	16, // 40: opentalon.talondb.v1.TalonDBService.GroupCount:input_type -> opentalon.talondb.v1.GroupRequest
+	18, // 41: opentalon.talondb.v1.TalonDBService.Stats:input_type -> opentalon.talondb.v1.StatsRequest
+	20, // 42: opentalon.talondb.v1.TalonDBService.LastSeen:input_type -> opentalon.talondb.v1.LastSeenRequest
+	22, // 43: opentalon.talondb.v1.TalonDBService.LastWritten:input_type -> opentalon.talondb.v1.LastWrittenRequest
+	24, // 44: opentalon.talondb.v1.TalonDBService.Ancestors:input_type -> opentalon.talondb.v1.AncestorsRequest
+	25, // 45: opentalon.talondb.v1.TalonDBService.Descendants:input_type -> opentalon.talondb.v1.DescendantsRequest
+	29, // 46: opentalon.talondb.v1.TalonDBService.Query:input_type -> opentalon.talondb.v1.QueryRequest
+	56, // 47: opentalon.talondb.v1.TalonDBService.QueryAsOf:input_type -> opentalon.talondb.v1.QueryAsOfRequest
+	41, // 48: opentalon.talondb.v1.TalonDBService.SequenceJoin:input_type -> opentalon.talondb.v1.SequenceJoinRequest
+	44, // 49: opentalon.talondb.v1.TalonDBService.ClusterQuery:input_type -> opentalon.talondb.v1.ClusterQueryRequest
+	47, // 50: opentalon.talondb.v1.TalonDBService.VectorInsert:input_type -> opentalon.talondb.v1.VectorInsertRequest
+	48, // 51: opentalon.talondb.v1.TalonDBService.VectorSearch:input_type -> opentalon.talondb.v1.VectorSearchRequest
+	51, // 52: opentalon.talondb.v1.TalonDBService.VectorDelete:input_type -> opentalon.talondb.v1.VectorDeleteRequest
+	52, // 53: opentalon.talondb.v1.TalonDBService.VectorDropScope:input_type -> opentalon.talondb.v1.VectorDropScopeRequest
+	53, // 54: opentalon.talondb.v1.TalonDBService.VectorListScopes:input_type -> opentalon.talondb.v1.VectorListScopesRequest
+	27, // 55: opentalon.talondb.v1.TalonDBService.Subscribe:input_type -> opentalon.talondb.v1.SubscribeRequest
+	58, // 56: opentalon.talondb.v1.TalonDBService.Health:input_type -> google.protobuf.Empty
+	58, // 57: opentalon.talondb.v1.TalonDBService.Put:output_type -> google.protobuf.Empty
+	6,  // 58: opentalon.talondb.v1.TalonDBService.Get:output_type -> opentalon.talondb.v1.GetResponse
+	58, // 59: opentalon.talondb.v1.TalonDBService.Delete:output_type -> google.protobuf.Empty
+	58, // 60: opentalon.talondb.v1.TalonDBService.BatchPut:output_type -> google.protobuf.Empty
+	2,  // 61: opentalon.talondb.v1.TalonDBService.Lookup:output_type -> opentalon.talondb.v1.DocIDList
+	2,  // 62: opentalon.talondb.v1.TalonDBService.LookupPrefix:output_type -> opentalon.talondb.v1.DocIDList
+	2,  // 63: opentalon.talondb.v1.TalonDBService.LookupNumericRange:output_type -> opentalon.talondb.v1.DocIDList
+	15, // 64: opentalon.talondb.v1.TalonDBService.WindowQuery:output_type -> opentalon.talondb.v1.WindowResponse
+	17, // 65: opentalon.talondb.v1.TalonDBService.GroupCount:output_type -> opentalon.talondb.v1.GroupResponse
+	19, // 66: opentalon.talondb.v1.TalonDBService.Stats:output_type -> opentalon.talondb.v1.StatsResponse
+	21, // 67: opentalon.talondb.v1.TalonDBService.LastSeen:output_type -> opentalon.talondb.v1.LastSeenResponse
+	23, // 68: opentalon.talondb.v1.TalonDBService.LastWritten:output_type -> opentalon.talondb.v1.LastWrittenResponse
+	3,  // 69: opentalon.talondb.v1.TalonDBService.Ancestors:output_type -> opentalon.talondb.v1.StringList
+	2,  // 70: opentalon.talondb.v1.TalonDBService.Descendants:output_type -> opentalon.talondb.v1.DocIDList
+	31, // 71: opentalon.talondb.v1.TalonDBService.Query:output_type -> opentalon.talondb.v1.QueryResponse
+	31, // 72: opentalon.talondb.v1.TalonDBService.QueryAsOf:output_type -> opentalon.talondb.v1.QueryResponse
+	42, // 73: opentalon.talondb.v1.TalonDBService.SequenceJoin:output_type -> opentalon.talondb.v1.SequenceJoinResponse
+	45, // 74: opentalon.talondb.v1.TalonDBService.ClusterQuery:output_type -> opentalon.talondb.v1.ClusterQueryResponse
+	58, // 75: opentalon.talondb.v1.TalonDBService.VectorInsert:output_type -> google.protobuf.Empty
+	49, // 76: opentalon.talondb.v1.TalonDBService.VectorSearch:output_type -> opentalon.talondb.v1.VectorSearchResponse
+	58, // 77: opentalon.talondb.v1.TalonDBService.VectorDelete:output_type -> google.protobuf.Empty
+	58, // 78: opentalon.talondb.v1.TalonDBService.VectorDropScope:output_type -> google.protobuf.Empty
+	54, // 79: opentalon.talondb.v1.TalonDBService.VectorListScopes:output_type -> opentalon.talondb.v1.VectorListScopesResponse
+	28, // 80: opentalon.talondb.v1.TalonDBService.Subscribe:output_type -> opentalon.talondb.v1.MutationEvent
+	26, // 81: opentalon.talondb.v1.TalonDBService.Health:output_type -> opentalon.talondb.v1.HealthResponse
+	57, // [57:82] is the sub-list for method output_type
+	32, // [32:57] is the sub-list for method input_type
+	32, // [32:32] is the sub-list for extension type_name
+	32, // [32:32] is the sub-list for extension extendee
+	0,  // [0:32] is the sub-list for field type_name
 }
 
 func init() { file_proto_talondb_proto_init() }
@@ -3676,7 +3780,7 @@ func file_proto_talondb_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_talondb_proto_rawDesc), len(file_proto_talondb_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   54,
+			NumMessages:   55,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
