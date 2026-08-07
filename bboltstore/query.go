@@ -67,8 +67,9 @@ type QueryNot struct {
 }
 
 // QueryFullText scans an entity's string-valued attributes for the
-// query substring (case-insensitive). When Attribute is set, only
-// that attribute is searched.
+// query substring (case-insensitive). List-valued attributes are
+// scanned element by element. When Attribute is set, only that
+// attribute is searched.
 type QueryFullText struct {
 	Entity    QueryTerm
 	Query     string
@@ -329,19 +330,29 @@ func matchQueryFullText(f *QueryFullText, attrs map[string]any) bool {
 		if !ok {
 			return false
 		}
-		s, ok := v.(string)
-		return ok && strings.Contains(strings.ToLower(s), needle)
+		return fullTextValueMatches(v, needle)
 	}
 	for _, v := range attrs {
-		s, ok := v.(string)
-		if !ok {
-			continue
-		}
-		if strings.Contains(strings.ToLower(s), needle) {
+		if fullTextValueMatches(v, needle) {
 			return true
 		}
 	}
 	return false
+}
+
+// fullTextValueMatches reports whether one attribute value contains the
+// (already lower-cased) needle, quantifying over list elements.
+func fullTextValueMatches(v any, needle string) bool {
+	if elems, ok := queryStringElements(v); ok {
+		for _, e := range elems {
+			if strings.Contains(strings.ToLower(e), needle) {
+				return true
+			}
+		}
+		return false
+	}
+	s, ok := v.(string)
+	return ok && strings.Contains(strings.ToLower(s), needle)
 }
 
 // ---------- helpers ----------
@@ -438,19 +449,54 @@ func evalQueryPredicate(op string, left, right any) bool {
 			return l >= r
 		}
 	case "starts_with":
-		ls, lok := left.(string)
-		rs, rok := right.(string)
-		return lok && rok && strings.HasPrefix(ls, rs)
+		return queryStringPredicate(left, right, strings.HasPrefix)
 	case "ends_with":
-		ls, lok := left.(string)
-		rs, rok := right.(string)
-		return lok && rok && strings.HasSuffix(ls, rs)
+		return queryStringPredicate(left, right, strings.HasSuffix)
 	case "contains":
-		ls, lok := left.(string)
-		rs, rok := right.(string)
-		return lok && rok && strings.Contains(ls, rs)
+		return queryStringPredicate(left, right, strings.Contains)
 	}
 	return false
+}
+
+// queryStringPredicate applies op to two string operands. A list-valued left
+// operand quantifies existentially — the predicate holds if any element
+// satisfies op — matching how the inverted index terms each element
+// separately. Non-string elements are skipped.
+func queryStringPredicate(left, right any, op func(string, string) bool) bool {
+	rs, rok := right.(string)
+	if !rok {
+		return false
+	}
+	if elems, ok := queryStringElements(left); ok {
+		for _, e := range elems {
+			if op(e, rs) {
+				return true
+			}
+		}
+		return false
+	}
+	ls, lok := left.(string)
+	return lok && op(ls, rs)
+}
+
+// queryStringElements reports the string elements of a list-valued attribute.
+// The second result distinguishes "not a list" from "a list with no string
+// elements" — the latter matches nothing rather than falling back to the
+// scalar path.
+func queryStringElements(v any) ([]string, bool) {
+	switch list := v.(type) {
+	case []string:
+		return list, true
+	case []any:
+		out := make([]string, 0, len(list))
+		for _, e := range list {
+			if s, ok := e.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out, true
+	}
+	return nil, false
 }
 
 func equalQueryValues(a, b any) bool {
