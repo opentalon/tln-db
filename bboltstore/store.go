@@ -14,6 +14,7 @@ import (
 	"time"
 
 	talondb "github.com/opentalon/talon-db"
+	"github.com/opentalon/talon-db/proto/talondbpb"
 	"github.com/opentalon/talon-db/vectorindex"
 
 	"github.com/golang/snappy"
@@ -37,16 +38,35 @@ type Store struct {
 	vecOnce    sync.Once
 	vectors    *vectorindex.Index
 	vecLoadErr error
+
+	// Replication op-log (enabled via WithReplication). replNotify is a
+	// broadcast channel closed+recreated after every committed write so
+	// TailOpLog waiters wake without a lost-wakeup race.
+	replEnabled   bool
+	replRetention uint64
+	replMu        sync.Mutex
+	replNotify    chan struct{}
+	done          chan struct{}
+	closeOnce     sync.Once
 }
 
 // Open opens (or creates) a bbolt database at path and returns a Store.
-// Callers must call Close when done.
-func Open(path string) (*Store, error) {
+// Callers must call Close when done. Pass WithReplication to enable the
+// durable replication op-log.
+func Open(path string, opts ...Option) (*Store, error) {
 	db, err := bolt.Open(path, 0o600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return nil, fmt.Errorf("bboltstore: open %q: %w", path, err)
 	}
-	return &Store{db: db, now: time.Now}, nil
+	s := &Store{db: db, now: time.Now, replNotify: make(chan struct{})}
+	for _, opt := range opts {
+		opt(s)
+	}
+	if s.replEnabled && s.replRetention > 0 {
+		s.done = make(chan struct{})
+		go s.trimLoop()
+	}
+	return s, nil
 }
 
 // Events returns the mutation event emitter. Subscribers receive a
@@ -108,6 +128,11 @@ func (s *Store) LastWritten(ctx context.Context, entityID, docID string) (time.T
 
 // Close closes the underlying bbolt database.
 func (s *Store) Close() error {
+	s.closeOnce.Do(func() {
+		if s.done != nil {
+			close(s.done)
+		}
+	})
 	return s.db.Close()
 }
 
@@ -143,6 +168,9 @@ func (s *Store) Put(ctx context.Context, entityID, docID string, doc []byte) err
 	if err == nil {
 		for _, ev := range pending {
 			s.events.Emit(ctx, ev)
+		}
+		if s.replEnabled {
+			s.signalRepl()
 		}
 	}
 	return err
@@ -191,44 +219,43 @@ func (s *Store) Delete(ctx context.Context, entityID, docID string) error {
 	}
 	var pending *talondb.MutationEvent
 	err := s.db.Update(func(tx *bolt.Tx) error {
-		var oldDoc []byte
-		if b := tx.Bucket([]byte(docsBucketPrefix + entityID)); b != nil {
-			if prior := b.Get([]byte(docID)); prior != nil {
-				decoded, err := snappy.Decode(nil, prior)
-				if err != nil {
-					return fmt.Errorf("bboltstore: decode prior doc for %q: %w", docID, err)
-				}
-				oldDoc = decoded
-			}
-			if err := b.Delete([]byte(docID)); err != nil {
-				return err
-			}
+		oldDoc, err := readDocInTx(tx, entityID, docID)
+		if err != nil {
+			return fmt.Errorf("bboltstore: decode prior doc for %q: %w", docID, err)
 		}
-		if b := tx.Bucket([]byte(metaBucketPrefix + entityID)); b != nil {
-			if err := b.Delete([]byte(docID)); err != nil {
-				return err
-			}
+		if oldDoc == nil {
+			return nil // deleting a missing document is a no-op
 		}
-		if oldDoc != nil {
-			if err := indexDocOnDelete(tx, entityID, docID, oldDoc); err != nil {
-				return err
-			}
-			delAt := s.now().UnixNano()
-			if err := appendDocHistory(tx, entityID, docID, docVersion{At: delAt, Deleted: true}); err != nil {
-				return err
-			}
-			pending = &talondb.MutationEvent{
-				Kind:        talondb.EventRetract,
-				EntityID:    entityID,
-				DocID:       docID,
-				OldDoc:      oldDoc,
+		delAt := s.now().UnixNano()
+		if err := deleteDocInTx(tx, entityID, docID, oldDoc, delAt); err != nil {
+			return err
+		}
+		if s.replEnabled {
+			if _, err := appendOpLog(tx, &talondbpb.OpLogEntry{
+				Kind:        talondbpb.OpKind_OP_KIND_DOC_RETRACT,
+				EntityId:    entityID,
+				DocId:       docID,
 				AtUnixNanos: delAt,
+			}); err != nil {
+				return err
 			}
+		}
+		pending = &talondb.MutationEvent{
+			Kind:        talondb.EventRetract,
+			EntityID:    entityID,
+			DocID:       docID,
+			OldDoc:      oldDoc,
+			AtUnixNanos: delAt,
 		}
 		return nil
 	})
-	if err == nil && pending != nil {
-		s.events.Emit(ctx, *pending)
+	if err == nil {
+		if pending != nil {
+			s.events.Emit(ctx, *pending)
+		}
+		if s.replEnabled {
+			s.signalRepl()
+		}
 	}
 	return err
 }
@@ -268,6 +295,9 @@ func (s *Store) BatchPut(ctx context.Context, entityID string, docs map[string][
 	if err == nil {
 		for _, ev := range pending {
 			s.events.Emit(ctx, ev)
+		}
+		if s.replEnabled {
+			s.signalRepl()
 		}
 	}
 	return err
@@ -316,60 +346,51 @@ var errStopScan = errors.New("stop scan")
 // always non-nil because we always bump the version counter even on
 // identical bytes; refine if we ever add idempotency).
 func (s *Store) putInTxEvents(tx *bolt.Tx, entityID, docID string, doc []byte) (*talondb.MutationEvent, error) {
-	docsBucket, err := tx.CreateBucketIfNotExists([]byte(docsBucketPrefix + entityID))
-	if err != nil {
-		return nil, err
-	}
-	metaBucket, err := tx.CreateBucketIfNotExists([]byte(metaBucketPrefix + entityID))
-	if err != nil {
-		return nil, err
-	}
-
 	// Capture the prior doc bytes (if any) for index delta computation
 	// and the OldDoc field of the MutationEvent.
-	var oldDoc []byte
-	if prior := docsBucket.Get([]byte(docID)); prior != nil {
-		decoded, err := snappy.Decode(nil, prior)
-		if err != nil {
-			return nil, fmt.Errorf("bboltstore: decode prior doc for %q: %w", docID, err)
-		}
-		oldDoc = decoded
+	oldDoc, err := readDocInTx(tx, entityID, docID)
+	if err != nil {
+		return nil, fmt.Errorf("bboltstore: decode prior doc for %q: %w", docID, err)
 	}
 
 	now := s.now().UnixNano()
-	var m docMeta
-	if existing := metaBucket.Get([]byte(docID)); existing != nil {
-		if err := json.Unmarshal(existing, &m); err != nil {
-			return nil, fmt.Errorf("bboltstore: decode meta for %q: %w", docID, err)
+	m := docMeta{CreatedAt: now, UpdatedAt: now, Version: 1}
+	if mb := tx.Bucket([]byte(metaBucketPrefix + entityID)); mb != nil {
+		if existing := mb.Get([]byte(docID)); existing != nil {
+			if err := json.Unmarshal(existing, &m); err != nil {
+				return nil, fmt.Errorf("bboltstore: decode meta for %q: %w", docID, err)
+			}
+			m.UpdatedAt = now
+			m.Version++
 		}
-		m.UpdatedAt = now
-		m.Version++
-	} else {
-		m = docMeta{CreatedAt: now, UpdatedAt: now, Version: 1}
-	}
-	metaBytes, err := json.Marshal(m)
-	if err != nil {
-		return nil, fmt.Errorf("bboltstore: encode meta for %q: %w", docID, err)
-	}
-	if err := metaBucket.Put([]byte(docID), metaBytes); err != nil {
-		return nil, err
 	}
 
-	compressed := snappy.Encode(nil, doc)
-	if err := docsBucket.Put([]byte(docID), compressed); err != nil {
-		return nil, err
-	}
-	if err := indexDocOnPut(tx, entityID, docID, oldDoc, doc); err != nil {
-		return nil, err
-	}
-	if err := appendDocHistory(tx, entityID, docID, docVersion{At: now, Data: append([]byte(nil), doc...)}); err != nil {
+	if err := writeDocInTx(tx, entityID, docID, oldDoc, doc, m); err != nil {
 		return nil, err
 	}
 
 	kind := talondb.EventAssert
+	opKind := talondbpb.OpKind_OP_KIND_DOC_ASSERT
 	if oldDoc != nil {
 		kind = talondb.EventChange
+		opKind = talondbpb.OpKind_OP_KIND_DOC_CHANGE
 	}
+
+	if s.replEnabled {
+		if _, err := appendOpLog(tx, &talondbpb.OpLogEntry{
+			Kind:        opKind,
+			EntityId:    entityID,
+			DocId:       docID,
+			NewDoc:      append([]byte(nil), doc...),
+			CreatedAt:   m.CreatedAt,
+			UpdatedAt:   m.UpdatedAt,
+			Version:     m.Version,
+			AtUnixNanos: now,
+		}); err != nil {
+			return nil, err
+		}
+	}
+
 	return &talondb.MutationEvent{
 		Kind:        kind,
 		EntityID:    entityID,

@@ -23,17 +23,25 @@ type serverConfig struct {
 	TCP     string `yaml:"tcp"`
 	HTTP    string `yaml:"http"`
 	Metrics string `yaml:"metrics"`
+
+	// Replication.
+	Role           string `yaml:"role"`            // standalone | leader | follower
+	ReplicateFrom  string `yaml:"replicate_from"`  // follower: leader gRPC address
+	OplogRetention string `yaml:"oplog_retention"` // leader/follower: max op-log entries kept
 }
 
 // defaultConfig returns the built-in defaults. These match the historical
 // flag defaults so existing invocations keep behaving identically.
 func defaultConfig() serverConfig {
 	return serverConfig{
-		DB:      "talondb.bbolt",
-		Socket:  "",
-		TCP:     "",
-		HTTP:    "",
-		Metrics: "",
+		DB:             "talondb.bbolt",
+		Socket:         "",
+		TCP:            "",
+		HTTP:           "",
+		Metrics:        "",
+		Role:           "standalone",
+		ReplicateFrom:  "",
+		OplogRetention: "",
 	}
 }
 
@@ -56,6 +64,15 @@ func (c *serverConfig) overlay(o serverConfig) {
 	}
 	if o.Metrics != "" {
 		c.Metrics = o.Metrics
+	}
+	if o.Role != "" {
+		c.Role = o.Role
+	}
+	if o.ReplicateFrom != "" {
+		c.ReplicateFrom = o.ReplicateFrom
+	}
+	if o.OplogRetention != "" {
+		c.OplogRetention = o.OplogRetention
 	}
 }
 
@@ -94,11 +111,14 @@ func resolveConfig(flags serverConfig, setFlags map[string]bool, configPath stri
 
 	// Environment variables.
 	cfg.overlay(serverConfig{
-		DB:      getenv("TALONDB_DB"),
-		Socket:  getenv("TALONDB_SOCKET"),
-		TCP:     getenv("TALONDB_TCP"),
-		HTTP:    getenv("TALONDB_HTTP"),
-		Metrics: getenv("TALONDB_METRICS"),
+		DB:             getenv("TALONDB_DB"),
+		Socket:         getenv("TALONDB_SOCKET"),
+		TCP:            getenv("TALONDB_TCP"),
+		HTTP:           getenv("TALONDB_HTTP"),
+		Metrics:        getenv("TALONDB_METRICS"),
+		Role:           getenv("TALONDB_ROLE"),
+		ReplicateFrom:  getenv("TALONDB_REPLICATE_FROM"),
+		OplogRetention: getenv("TALONDB_OPLOG_RETENTION"),
 	})
 
 	// Explicitly-set flags win — including setting a value back to empty.
@@ -116,6 +136,15 @@ func resolveConfig(flags serverConfig, setFlags map[string]bool, configPath stri
 	}
 	if setFlags["metrics"] {
 		cfg.Metrics = flags.Metrics
+	}
+	if setFlags["role"] {
+		cfg.Role = flags.Role
+	}
+	if setFlags["replicate-from"] {
+		cfg.ReplicateFrom = flags.ReplicateFrom
+	}
+	if setFlags["oplog-retention"] {
+		cfg.OplogRetention = flags.OplogRetention
 	}
 
 	return cfg, nil

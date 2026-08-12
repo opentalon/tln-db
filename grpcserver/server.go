@@ -7,6 +7,7 @@ package grpcserver
 import (
 	"context"
 	"errors"
+	"io"
 	"math"
 	"strings"
 	"time"
@@ -19,29 +20,69 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+// replicator is the subset of the store surface that powers the
+// Replicate / Snapshot RPCs and the replication fields of Health. The
+// bboltstore.Store satisfies it; other backends leave it nil.
+type replicator interface {
+	TailOpLog(ctx context.Context, fromSeq uint64, fn func(*talondbpb.OpLogEntry) error) error
+	WriteSnapshot(w io.Writer, onSeq func(uint64) error) error
+	ReplicationEnabled() bool
+	AppliedSeq() uint64
+	CurrentSeq() uint64
+	MinSeq() uint64
+}
+
 // Server wraps a talondb.IndexedStore. An optional EventEmitter, when
 // non-nil, powers the Subscribe streaming RPC; clients can subscribe
 // to MutationEvents that fire post-commit.
 type Server struct {
 	talondbpb.UnimplementedTalonDBServiceServer
-	store   talondb.IndexedStore
-	events  *talondb.EventEmitter
-	version string
+	store    talondb.IndexedStore
+	events   *talondb.EventEmitter
+	version  string
+	role     string
+	readOnly bool
+	repl     replicator
 }
+
+// Option configures a Server.
+type Option func(*Server)
+
+// WithReadOnly rejects all write RPCs with FailedPrecondition. Used for
+// replica followers.
+func WithReadOnly() Option { return func(s *Server) { s.readOnly = true } }
+
+// WithRole sets the role reported by Health ("leader"/"follower"/"standalone").
+func WithRole(role string) Option { return func(s *Server) { s.role = role } }
 
 // New constructs a Server over the given store. version is reported
 // by the Health RPC. events, when non-nil, enables the Subscribe RPC;
 // pass store.Events() if the backend supports it. Vector RPCs work
 // when the store satisfies the local vectorStore interface (the
 // bboltstore.Store does); other backends get Unimplemented for the
-// vector surface.
-func New(store talondb.IndexedStore, events *talondb.EventEmitter, version string) *Server {
-	return &Server{store: store, events: events, version: version}
+// vector surface. When the store satisfies replicator, the Replicate /
+// Snapshot RPCs are served.
+func New(store talondb.IndexedStore, events *talondb.EventEmitter, version string, opts ...Option) *Server {
+	srv := &Server{store: store, events: events, version: version, role: "standalone"}
+	if r, ok := store.(replicator); ok {
+		srv.repl = r
+	}
+	for _, opt := range opts {
+		opt(srv)
+	}
+	return srv
+}
+
+func (s *Server) roErr() error {
+	return status.Error(codes.FailedPrecondition, "talondb: read-only replica")
 }
 
 // ---------- DocumentStore ----------
 
 func (s *Server) Put(ctx context.Context, req *talondbpb.PutRequest) (*emptypb.Empty, error) {
+	if s.readOnly {
+		return nil, s.roErr()
+	}
 	if err := s.store.Put(ctx, req.GetEntityId(), req.GetDocId(), req.GetDoc()); err != nil {
 		return nil, mapError(err)
 	}
@@ -60,6 +101,9 @@ func (s *Server) Get(ctx context.Context, req *talondbpb.GetRequest) (*talondbpb
 }
 
 func (s *Server) Delete(ctx context.Context, req *talondbpb.DeleteRequest) (*emptypb.Empty, error) {
+	if s.readOnly {
+		return nil, s.roErr()
+	}
 	if err := s.store.Delete(ctx, req.GetEntityId(), req.GetDocId()); err != nil {
 		return nil, mapError(err)
 	}
@@ -67,6 +111,9 @@ func (s *Server) Delete(ctx context.Context, req *talondbpb.DeleteRequest) (*emp
 }
 
 func (s *Server) BatchPut(ctx context.Context, req *talondbpb.BatchPutRequest) (*emptypb.Empty, error) {
+	if s.readOnly {
+		return nil, s.roErr()
+	}
 	docs := make(map[string][]byte, len(req.GetEntries()))
 	for _, e := range req.GetEntries() {
 		docs[e.GetDocId()] = e.GetDoc()
@@ -333,10 +380,68 @@ func mutationKindToProto(k talondb.EventKind) talondbpb.MutationEventKind {
 	return talondbpb.MutationEventKind_MUTATION_EVENT_KIND_UNSPECIFIED
 }
 
+// ---------- Replication ----------
+
+func (s *Server) Replicate(req *talondbpb.ReplicateRequest, stream talondbpb.TalonDBService_ReplicateServer) error {
+	if s.repl == nil || !s.repl.ReplicationEnabled() {
+		return status.Error(codes.Unimplemented, "talondb: replication not enabled")
+	}
+	err := s.repl.TailOpLog(stream.Context(), req.GetFromSeq(), func(e *talondbpb.OpLogEntry) error {
+		return stream.Send(e)
+	})
+	switch {
+	case err == nil, errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+		return err
+	case errors.Is(err, talondb.ErrSnapshotRequired):
+		return status.Error(codes.FailedPrecondition, err.Error())
+	default:
+		return status.Error(codes.Internal, err.Error())
+	}
+}
+
+// snapshotWriter chunks bbolt's WriteTo output into SnapshotChunk
+// messages on the stream.
+type snapshotWriter struct {
+	stream talondbpb.TalonDBService_SnapshotServer
+}
+
+func (w snapshotWriter) Write(p []byte) (int, error) {
+	const maxChunk = 256 << 10
+	for off := 0; off < len(p); off += maxChunk {
+		end := off + maxChunk
+		if end > len(p) {
+			end = len(p)
+		}
+		if err := w.stream.Send(&talondbpb.SnapshotChunk{Data: p[off:end]}); err != nil {
+			return off, err
+		}
+	}
+	return len(p), nil
+}
+
+func (s *Server) Snapshot(_ *talondbpb.SnapshotRequest, stream talondbpb.TalonDBService_SnapshotServer) error {
+	if s.repl == nil || !s.repl.ReplicationEnabled() {
+		return status.Error(codes.Unimplemented, "talondb: replication not enabled")
+	}
+	err := s.repl.WriteSnapshot(snapshotWriter{stream}, func(seq uint64) error {
+		return stream.Send(&talondbpb.SnapshotChunk{Seq: seq})
+	})
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+	return nil
+}
+
 // ---------- Operational ----------
 
 func (s *Server) Health(ctx context.Context, _ *emptypb.Empty) (*talondbpb.HealthResponse, error) {
-	return &talondbpb.HealthResponse{Status: "ok", Version: s.version}, nil
+	resp := &talondbpb.HealthResponse{Status: "ok", Version: s.version, Role: s.role}
+	if s.repl != nil {
+		resp.AppliedSeq = s.repl.AppliedSeq()
+		resp.CurrentSeq = s.repl.CurrentSeq()
+		resp.MinSeq = s.repl.MinSeq()
+	}
+	return resp, nil
 }
 
 // ---------- helpers ----------

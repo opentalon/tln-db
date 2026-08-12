@@ -10,6 +10,11 @@ import (
 // entityID and docID.
 var ErrNotFound = errors.New("talondb: document not found")
 
+// ErrSnapshotRequired is returned when a replication follower requests a
+// log position older than the leader's retained window; the follower
+// must re-bootstrap from a fresh Snapshot.
+var ErrSnapshotRequired = errors.New("talondb: requested seq older than retained min_seq; snapshot required")
+
 // ErrInvalidEntityID is returned when an entityID is empty or contains a
 // reserved character. The colon (":") separates the bucket prefix from
 // the tenant name in the on-disk layout, so it cannot appear inside an
