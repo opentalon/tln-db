@@ -6,12 +6,17 @@ on:
   pull_request:
     branches: [master]
 
+env:
+  # Pinned so lint is deterministic and reproducible locally. This build
+  # supports Go 1.25 and is installed as a prebuilt binary (no compile).
+  GOLANGCI_LINT_VERSION: v2.12.2
+
 jobs:
   go-test:
     name: Go Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
           go-version: "1.25"
@@ -21,10 +26,26 @@ jobs:
     name: Go Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
           go-version: "1.25"
-      - uses: golangci/golangci-lint-action@v7
-        with:
-          version: latest
+      # Install the pinned golangci-lint binary directly (the module proxy /
+      # release CDN with an explicit retry), rather than golangci-lint-action,
+      # which has intermittently failed to fetch its binary (HTTP 503).
+      - name: Install golangci-lint
+        run: |
+          set +e
+          ok=0
+          for i in 1 2 3 4 5; do
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
+              | sh -s -- -b "$(go env GOPATH)/bin" "${GOLANGCI_LINT_VERSION}" && { ok=1; break; }
+            echo "golangci-lint install attempt $i failed; retrying in 10s"
+            sleep 10
+          done
+          [ "$ok" = 1 ] || { echo "golangci-lint install failed after retries"; exit 1; }
+          "$(go env GOPATH)/bin/golangci-lint" version
+      - name: Lint
+        run: |
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          golangci-lint run --timeout=5m ./...
