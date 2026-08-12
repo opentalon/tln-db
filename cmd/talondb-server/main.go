@@ -9,6 +9,14 @@
 //	talondb-server --db ./talondb.bbolt
 //	talondb-server --db ./talondb.bbolt --socket /tmp/talondb.sock --tcp :9899
 //	talondb-server --db ./talondb.bbolt --http :8080
+//	talondb-server --config /etc/talondb/config.yaml --metrics :9090
+//
+// Configuration may also come from a YAML file (--config / TALONDB_CONFIG)
+// and TALONDB_* environment variables (TALONDB_DB, TALONDB_SOCKET,
+// TALONDB_TCP, TALONDB_HTTP, TALONDB_METRICS). Precedence, low to high:
+// built-in defaults < config file < env vars < explicit flags. This lets a
+// Kubernetes ConfigMap or Secret drive the server. When --metrics is set,
+// Prometheus metrics are served at GET /metrics on that address.
 //
 // On successful startup the server prints exactly one handshake line
 // to stdout per listener — e.g.
@@ -41,6 +49,8 @@ import (
 	"github.com/opentalon/talon-db/grpcserver"
 	"github.com/opentalon/talon-db/proto/talondbpb"
 
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -53,41 +63,61 @@ var version = "dev"
 
 func main() {
 	var (
-		dbPath     = flag.String("db", "talondb.bbolt", "path to the bbolt data file")
-		socketPath = flag.String("socket", "", "Unix-socket path for gRPC (empty = no Unix socket)")
-		tcpAddr    = flag.String("tcp", "", "TCP address for gRPC (empty = no TCP listener), e.g. :9899")
-		httpAddr   = flag.String("http", "", "TCP address for HTTP/JSON (empty = no HTTP listener), e.g. :8080")
+		dbPath      = flag.String("db", "talondb.bbolt", "path to the bbolt data file")
+		socketPath  = flag.String("socket", "", "Unix-socket path for gRPC (empty = no Unix socket)")
+		tcpAddr     = flag.String("tcp", "", "TCP address for gRPC (empty = no TCP listener), e.g. :9899")
+		httpAddr    = flag.String("http", "", "TCP address for HTTP/JSON (empty = no HTTP listener), e.g. :8080")
+		metricsAddr = flag.String("metrics", "", "TCP address for Prometheus /metrics (empty = disabled), e.g. :9090")
+		configPath  = flag.String("config", "", "path to a YAML config file (also TALONDB_CONFIG)")
 	)
 	flag.Parse()
 
-	if *socketPath == "" && *tcpAddr == "" && *httpAddr == "" {
-		// Default behaviour: a Unix socket next to the data file.
-		*socketPath = filepath.Join(filepath.Dir(*dbPath), "talondb.sock")
+	// Resolve configuration: defaults < config file < TALONDB_* env < flags.
+	setFlags := map[string]bool{}
+	flag.Visit(func(f *flag.Flag) { setFlags[f.Name] = true })
+	cfg, err := resolveConfig(
+		serverConfig{DB: *dbPath, Socket: *socketPath, TCP: *tcpAddr, HTTP: *httpAddr, Metrics: *metricsAddr},
+		setFlags,
+		*configPath,
+		os.Getenv,
+	)
+	if err != nil {
+		log.Fatalf("talondb-server: %v", err)
 	}
 
-	store, err := bboltstore.Open(*dbPath)
+	if cfg.Socket == "" && cfg.TCP == "" && cfg.HTTP == "" {
+		// Default behaviour: a Unix socket next to the data file.
+		cfg.Socket = filepath.Join(filepath.Dir(cfg.DB), "talondb.sock")
+	}
+
+	store, err := bboltstore.Open(cfg.DB)
 	if err != nil {
-		log.Fatalf("talondb-server: open %q: %v", *dbPath, err)
+		log.Fatalf("talondb-server: open %q: %v", cfg.DB, err)
 	}
 	defer func() { _ = store.Close() }()
 
 	svc := grpcserver.New(store, store.Events(), version)
-	grpcSrv := grpc.NewServer()
+	grpcSrv := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
+		grpc.ChainStreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+	)
 	talondbpb.RegisterTalonDBServiceServer(grpcSrv, svc)
+	grpc_prometheus.Register(grpcSrv)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
 	var wg sync.WaitGroup
 	httpSrv := (*http.Server)(nil)
+	metricsSrv := (*http.Server)(nil)
 
-	if *socketPath != "" {
-		ln, err := listenUnix(*socketPath)
+	if cfg.Socket != "" {
+		ln, err := listenUnix(cfg.Socket)
 		if err != nil {
 			log.Fatalf("talondb-server: %v", err)
 		}
-		defer func() { _ = os.Remove(*socketPath) }()
-		announce("unix://" + *socketPath)
+		defer func() { _ = os.Remove(cfg.Socket) }()
+		announce("unix://" + cfg.Socket)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -97,10 +127,10 @@ func main() {
 		}()
 	}
 
-	if *tcpAddr != "" {
-		ln, err := net.Listen("tcp", *tcpAddr)
+	if cfg.TCP != "" {
+		ln, err := net.Listen("tcp", cfg.TCP)
 		if err != nil {
-			log.Fatalf("talondb-server: tcp listen %q: %v", *tcpAddr, err)
+			log.Fatalf("talondb-server: tcp listen %q: %v", cfg.TCP, err)
 		}
 		announce("tcp://" + ln.Addr().String())
 		wg.Add(1)
@@ -112,20 +142,46 @@ func main() {
 		}()
 	}
 
-	if *httpAddr != "" {
-		httpSrv = startHTTPServer(*httpAddr, svc, &wg)
+	if cfg.HTTP != "" {
+		httpSrv = startHTTPServer(cfg.HTTP, svc, &wg)
+	}
+
+	if cfg.Metrics != "" {
+		metricsSrv = startMetricsServer(cfg.Metrics, &wg)
 	}
 
 	<-ctx.Done()
 	log.Printf("talondb-server: shutdown signal received")
 
 	grpcSrv.GracefulStop()
+	shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelShutdown()
 	if httpSrv != nil {
-		shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancelShutdown()
 		_ = httpSrv.Shutdown(shutdownCtx)
 	}
+	if metricsSrv != nil {
+		_ = metricsSrv.Shutdown(shutdownCtx)
+	}
 	wg.Wait()
+}
+
+// startMetricsServer exposes Prometheus metrics at GET /metrics — gRPC
+// server RPC metrics (registered via grpc_prometheus) plus the default Go
+// runtime and process collectors. Kubernetes scrapes this via a
+// ServiceMonitor when metrics are enabled.
+func startMetricsServer(addr string, wg *sync.WaitGroup) *http.Server {
+	mux := http.NewServeMux()
+	mux.Handle("GET /metrics", promhttp.Handler())
+	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
+	announce("http://" + addr + "/metrics")
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("talondb-server: metrics: %v", err)
+		}
+	}()
+	return srv
 }
 
 func listenUnix(path string) (net.Listener, error) {
