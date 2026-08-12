@@ -37,6 +37,9 @@ func (s *Server) vectorBackend() (vectorStore, error) {
 // the first insert into a (entity, scope) pair; later inserts keep the
 // scope's original metric.
 func (s *Server) VectorInsert(ctx context.Context, req *talondbpb.VectorInsertRequest) (*emptypb.Empty, error) {
+	if s.readOnly {
+		return nil, s.roErr()
+	}
 	v, err := s.vectorBackend()
 	if err != nil {
 		return nil, err
@@ -75,6 +78,9 @@ func (s *Server) VectorSearch(ctx context.Context, req *talondbpb.VectorSearchRe
 }
 
 func (s *Server) VectorDelete(ctx context.Context, req *talondbpb.VectorDeleteRequest) (*emptypb.Empty, error) {
+	if s.readOnly {
+		return nil, s.roErr()
+	}
 	v, err := s.vectorBackend()
 	if err != nil {
 		return nil, err
@@ -86,6 +92,9 @@ func (s *Server) VectorDelete(ctx context.Context, req *talondbpb.VectorDeleteRe
 }
 
 func (s *Server) VectorDropScope(ctx context.Context, req *talondbpb.VectorDropScopeRequest) (*emptypb.Empty, error) {
+	if s.readOnly {
+		return nil, s.roErr()
+	}
 	v, err := s.vectorBackend()
 	if err != nil {
 		return nil, err

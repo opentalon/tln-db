@@ -83,6 +83,13 @@ service TalonDBService {
   // doc_id_prefix matches every doc.
   rpc Subscribe(SubscribeRequest) returns (stream MutationEvent);
 
+  // Replication — async read-replica log shipping. A follower first
+  // bootstraps via Snapshot (a consistent bbolt copy + its op-log seq)
+  // then tails Replicate from that seq. Both are served only when the
+  // leader was started with the replication log enabled.
+  rpc Replicate(ReplicateRequest) returns (stream OpLogEntry);
+  rpc Snapshot(SnapshotRequest) returns (stream SnapshotChunk);
+
   // Operational
   rpc Health(google.protobuf.Empty) returns (HealthResponse);
 }
@@ -229,6 +236,66 @@ message DescendantsRequest {
 message HealthResponse {
   string status  = 1;
   string version = 2;
+  // Replication status. role is "leader", "follower", or "standalone".
+  // applied_seq is the last op-log entry a follower has applied;
+  // current_seq is the local max op-log seq; min_seq is the earliest
+  // retained op-log seq. All zero when replication is disabled.
+  string role        = 3;
+  uint64 applied_seq = 4;
+  uint64 current_seq = 5;
+  uint64 min_seq     = 6;
+}
+
+// ---------- Replication (RPCs `Replicate` / `Snapshot`) ----------
+
+// OpKind classifies an OpLogEntry. Document ops carry the authoritative
+// post-image (new_doc + meta) so followers apply them verbatim; vector
+// ops carry the vector payload.
+enum OpKind {
+  OP_KIND_UNSPECIFIED    = 0;
+  OP_KIND_DOC_ASSERT     = 1;
+  OP_KIND_DOC_CHANGE     = 2;
+  OP_KIND_DOC_RETRACT    = 3;
+  OP_KIND_VEC_INSERT     = 4;
+  OP_KIND_VEC_DELETE     = 5;
+  OP_KIND_VEC_DROP_SCOPE = 6;
+}
+
+// OpLogEntry is a single, durably-logged mutation. Entries are totally
+// ordered by seq (monotonic, gap-free) across the whole database.
+message OpLogEntry {
+  uint64 seq           = 1;
+  OpKind kind          = 2;
+  string entity_id     = 3;
+  // doc_id holds the document ID for doc ops, or the vector ID for
+  // vector insert/delete ops.
+  string doc_id        = 4;
+  bytes  new_doc       = 5;   // doc assert/change
+  int64  created_at    = 6;   // doc meta (authoritative)
+  int64  updated_at    = 7;
+  int64  version       = 8;
+  int64  at_unix_nanos = 9;   // history / delete timestamp
+  // Vector fields (vec ops only). metric is the vectorindex.Metric enum.
+  string          scope  = 10;
+  repeated float  vector = 11;
+  int32           metric = 12;
+}
+
+message ReplicateRequest {
+  // Stream entries with seq >= from_seq. Follows live once caught up.
+  // If from_seq is older than the leader's retained min_seq the server
+  // returns FailedPrecondition and the follower must re-Snapshot.
+  uint64 from_seq = 1;
+}
+
+message SnapshotRequest {}
+
+// SnapshotChunk streams a consistent bbolt copy. The first message
+// carries seq (the snapshot's op-log position) with empty data; every
+// subsequent message carries a chunk of the database file.
+message SnapshotChunk {
+  uint64 seq  = 1;
+  bytes  data = 2;
 }
 
 // ---------- Mutation events ----------

@@ -9,6 +9,7 @@ import (
 	"math"
 
 	talondb "github.com/opentalon/talon-db"
+	"github.com/opentalon/talon-db/proto/talondbpb"
 	"github.com/opentalon/talon-db/vectorindex"
 
 	bolt "go.etcd.io/bbolt"
@@ -16,13 +17,13 @@ import (
 
 // Vector storage layout:
 //
-//   vec_registry:{entity}  bucket
-//     key   = scope name
-//     value = JSON-encoded scopeMeta{Dim, Metric}
+//	vec_registry:{entity}  bucket
+//	  key   = scope name
+//	  value = JSON-encoded scopeMeta{Dim, Metric}
 //
-//   vec_data:{entity}:{scope}  bucket
-//     key   = vector id
-//     value = packed []float32 (little-endian IEEE-754)
+//	vec_data:{entity}:{scope}  bucket
+//	  key   = vector id
+//	  value = packed []float32 (little-endian IEEE-754)
 //
 // The bbolt side is authoritative; the in-memory index is rebuilt by
 // Open() scanning these buckets and replaying every vector through
@@ -113,41 +114,67 @@ func (s *Store) VectorInsert(ctx context.Context, entityID, scope, id string, ve
 	}
 
 	// Persist + lock dim under bbolt.
+	var finalMetric vectorindex.Metric
 	if err := s.db.Update(func(tx *bolt.Tx) error {
-		regBucket, err := tx.CreateBucketIfNotExists([]byte(vecRegistryBucketPrefix + entityID))
+		m, err := vectorInsertInTx(tx, entityID, scope, id, vec, metric)
 		if err != nil {
 			return err
 		}
-		existing := regBucket.Get([]byte(scope))
-		if existing != nil {
-			var meta scopeMeta
-			if err := json.Unmarshal(existing, &meta); err != nil {
-				return fmt.Errorf("decode existing meta: %w", err)
-			}
-			if meta.Dim != len(vec) {
-				return fmt.Errorf("%w: scope %q/%q expects dim %d, got %d",
-					vectorindex.ErrDimensionMismatch, entityID, scope, meta.Dim, len(vec))
-			}
-			metric = meta.Metric // keep the original metric on overwrite
-		} else {
-			meta := scopeMeta{Dim: len(vec), Metric: metric}
-			encoded, _ := json.Marshal(meta)
-			if err := regBucket.Put([]byte(scope), encoded); err != nil {
+		finalMetric = m
+		if s.replEnabled {
+			if _, err := appendOpLog(tx, &talondbpb.OpLogEntry{
+				Kind:     talondbpb.OpKind_OP_KIND_VEC_INSERT,
+				EntityId: entityID,
+				DocId:    id,
+				Scope:    scope,
+				Vector:   append([]float32(nil), vec...),
+				Metric:   int32(m),
+			}); err != nil {
 				return err
 			}
 		}
-		dataBucket, err := tx.CreateBucketIfNotExists([]byte(vecDataBucketPrefix + entityID + ":" + scope))
-		if err != nil {
-			return err
-		}
-		return dataBucket.Put([]byte(id), encodeFloat32Slice(vec))
+		return nil
 	}); err != nil {
 		return err
+	}
+	if s.replEnabled {
+		s.signalRepl()
 	}
 
 	// In-memory mirror. Failure here means the in-memory side is stale
 	// but bbolt holds the truth; rebuild on next Open will reconcile.
-	return idx.Insert(entityID, scope, id, vec, metric)
+	return idx.Insert(entityID, scope, id, vec, finalMetric)
+}
+
+// vectorInsertInTx writes the vector + scope metadata into bbolt and
+// returns the effective metric (an existing scope's metric wins on
+// overwrite). Shared by the leader write path and follower apply.
+func vectorInsertInTx(tx *bolt.Tx, entityID, scope, id string, vec []float32, metric vectorindex.Metric) (vectorindex.Metric, error) {
+	regBucket, err := tx.CreateBucketIfNotExists([]byte(vecRegistryBucketPrefix + entityID))
+	if err != nil {
+		return metric, err
+	}
+	if existing := regBucket.Get([]byte(scope)); existing != nil {
+		var meta scopeMeta
+		if err := json.Unmarshal(existing, &meta); err != nil {
+			return metric, fmt.Errorf("decode existing meta: %w", err)
+		}
+		if meta.Dim != len(vec) {
+			return metric, fmt.Errorf("%w: scope %q/%q expects dim %d, got %d",
+				vectorindex.ErrDimensionMismatch, entityID, scope, meta.Dim, len(vec))
+		}
+		metric = meta.Metric // keep the original metric on overwrite
+	} else {
+		encoded, _ := json.Marshal(scopeMeta{Dim: len(vec), Metric: metric})
+		if err := regBucket.Put([]byte(scope), encoded); err != nil {
+			return metric, err
+		}
+	}
+	dataBucket, err := tx.CreateBucketIfNotExists([]byte(vecDataBucketPrefix + entityID + ":" + scope))
+	if err != nil {
+		return metric, err
+	}
+	return metric, dataBucket.Put([]byte(id), encodeFloat32Slice(vec))
 }
 
 // VectorSearch reads only from the in-memory index. The bbolt layer
@@ -179,15 +206,22 @@ func (s *Store) VectorDelete(ctx context.Context, entityID, scope, id string) er
 	}
 	var found bool
 	err = s.db.Update(func(tx *bolt.Tx) error {
-		data := tx.Bucket([]byte(vecDataBucketPrefix + entityID + ":" + scope))
-		if data == nil {
-			return nil
+		f, err := vectorDeleteInTx(tx, entityID, scope, id)
+		if err != nil {
+			return err
 		}
-		if data.Get([]byte(id)) == nil {
-			return nil
+		found = f
+		if f && s.replEnabled {
+			if _, err := appendOpLog(tx, &talondbpb.OpLogEntry{
+				Kind:     talondbpb.OpKind_OP_KIND_VEC_DELETE,
+				EntityId: entityID,
+				DocId:    id,
+				Scope:    scope,
+			}); err != nil {
+				return err
+			}
 		}
-		found = true
-		return data.Delete([]byte(id))
+		return nil
 	})
 	if err != nil {
 		return err
@@ -195,8 +229,21 @@ func (s *Store) VectorDelete(ctx context.Context, entityID, scope, id string) er
 	if !found {
 		return talondb.ErrNotFound
 	}
+	if s.replEnabled {
+		s.signalRepl()
+	}
 	idx.Delete(entityID, scope, id)
 	return nil
+}
+
+// vectorDeleteInTx removes a single vector; found reports whether it
+// existed. Shared by the leader write path and follower apply.
+func vectorDeleteInTx(tx *bolt.Tx, entityID, scope, id string) (bool, error) {
+	data := tx.Bucket([]byte(vecDataBucketPrefix + entityID + ":" + scope))
+	if data == nil || data.Get([]byte(id)) == nil {
+		return false, nil
+	}
+	return true, data.Delete([]byte(id))
 }
 
 // VectorDropScope removes every vector under (entityID, scope), the
@@ -215,15 +262,17 @@ func (s *Store) VectorDropScope(ctx context.Context, entityID, scope string) err
 	}
 	var found bool
 	err = s.db.Update(func(tx *bolt.Tx) error {
-		reg := tx.Bucket([]byte(vecRegistryBucketPrefix + entityID))
-		if reg != nil && reg.Get([]byte(scope)) != nil {
-			found = true
-			if err := reg.Delete([]byte(scope)); err != nil {
-				return err
-			}
+		f, err := vectorDropScopeInTx(tx, entityID, scope)
+		if err != nil {
+			return err
 		}
-		if tx.Bucket([]byte(vecDataBucketPrefix + entityID + ":" + scope)) != nil {
-			if err := tx.DeleteBucket([]byte(vecDataBucketPrefix + entityID + ":" + scope)); err != nil {
+		found = f
+		if f && s.replEnabled {
+			if _, err := appendOpLog(tx, &talondbpb.OpLogEntry{
+				Kind:     talondbpb.OpKind_OP_KIND_VEC_DROP_SCOPE,
+				EntityId: entityID,
+				Scope:    scope,
+			}); err != nil {
 				return err
 			}
 		}
@@ -235,8 +284,31 @@ func (s *Store) VectorDropScope(ctx context.Context, entityID, scope string) err
 	if !found {
 		return talondb.ErrNotFound
 	}
+	if s.replEnabled {
+		s.signalRepl()
+	}
 	idx.DropScope(entityID, scope)
 	return nil
+}
+
+// vectorDropScopeInTx removes a scope's registry entry and data bucket;
+// found reports whether the scope existed. Shared by leader write and
+// follower apply.
+func vectorDropScopeInTx(tx *bolt.Tx, entityID, scope string) (bool, error) {
+	var found bool
+	reg := tx.Bucket([]byte(vecRegistryBucketPrefix + entityID))
+	if reg != nil && reg.Get([]byte(scope)) != nil {
+		found = true
+		if err := reg.Delete([]byte(scope)); err != nil {
+			return false, err
+		}
+	}
+	if tx.Bucket([]byte(vecDataBucketPrefix+entityID+":"+scope)) != nil {
+		if err := tx.DeleteBucket([]byte(vecDataBucketPrefix + entityID + ":" + scope)); err != nil {
+			return false, err
+		}
+	}
+	return found, nil
 }
 
 // VectorListScopes returns every scope under entityID. Reads from the

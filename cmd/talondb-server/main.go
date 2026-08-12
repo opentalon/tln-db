@@ -41,6 +41,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -48,6 +49,7 @@ import (
 	"github.com/opentalon/talon-db/bboltstore"
 	"github.com/opentalon/talon-db/grpcserver"
 	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/talon-db/replica"
 
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -63,12 +65,15 @@ var version = "dev"
 
 func main() {
 	var (
-		dbPath      = flag.String("db", "talondb.bbolt", "path to the bbolt data file")
-		socketPath  = flag.String("socket", "", "Unix-socket path for gRPC (empty = no Unix socket)")
-		tcpAddr     = flag.String("tcp", "", "TCP address for gRPC (empty = no TCP listener), e.g. :9899")
-		httpAddr    = flag.String("http", "", "TCP address for HTTP/JSON (empty = no HTTP listener), e.g. :8080")
-		metricsAddr = flag.String("metrics", "", "TCP address for Prometheus /metrics (empty = disabled), e.g. :9090")
-		configPath  = flag.String("config", "", "path to a YAML config file (also TALONDB_CONFIG)")
+		dbPath         = flag.String("db", "talondb.bbolt", "path to the bbolt data file")
+		socketPath     = flag.String("socket", "", "Unix-socket path for gRPC (empty = no Unix socket)")
+		tcpAddr        = flag.String("tcp", "", "TCP address for gRPC (empty = no TCP listener), e.g. :9899")
+		httpAddr       = flag.String("http", "", "TCP address for HTTP/JSON (empty = no HTTP listener), e.g. :8080")
+		metricsAddr    = flag.String("metrics", "", "TCP address for Prometheus /metrics (empty = disabled), e.g. :9090")
+		configPath     = flag.String("config", "", "path to a YAML config file (also TALONDB_CONFIG)")
+		roleFlag       = flag.String("role", "standalone", "replication role: standalone | leader | follower")
+		replicateFrom  = flag.String("replicate-from", "", "follower: leader gRPC address, e.g. leader:9899")
+		oplogRetention = flag.String("oplog-retention", "", "leader/follower: max op-log entries kept (default 100000; 0 = keep all)")
 	)
 	flag.Parse()
 
@@ -76,7 +81,10 @@ func main() {
 	setFlags := map[string]bool{}
 	flag.Visit(func(f *flag.Flag) { setFlags[f.Name] = true })
 	cfg, err := resolveConfig(
-		serverConfig{DB: *dbPath, Socket: *socketPath, TCP: *tcpAddr, HTTP: *httpAddr, Metrics: *metricsAddr},
+		serverConfig{
+			DB: *dbPath, Socket: *socketPath, TCP: *tcpAddr, HTTP: *httpAddr, Metrics: *metricsAddr,
+			Role: *roleFlag, ReplicateFrom: *replicateFrom, OplogRetention: *oplogRetention,
+		},
 		setFlags,
 		*configPath,
 		os.Getenv,
@@ -85,18 +93,68 @@ func main() {
 		log.Fatalf("talondb-server: %v", err)
 	}
 
+	switch cfg.Role {
+	case "standalone", "leader", "follower":
+	default:
+		log.Fatalf("talondb-server: invalid role %q (want standalone|leader|follower)", cfg.Role)
+	}
+	if cfg.Role == "follower" && cfg.ReplicateFrom == "" {
+		log.Fatalf("talondb-server: --replicate-from (TALONDB_REPLICATE_FROM) is required for role=follower")
+	}
+
+	retention := uint64(100000)
+	if cfg.OplogRetention != "" {
+		n, err := strconv.ParseUint(cfg.OplogRetention, 10, 64)
+		if err != nil {
+			log.Fatalf("talondb-server: invalid oplog-retention %q: %v", cfg.OplogRetention, err)
+		}
+		retention = n
+	}
+
 	if cfg.Socket == "" && cfg.TCP == "" && cfg.HTTP == "" {
 		// Default behaviour: a Unix socket next to the data file.
 		cfg.Socket = filepath.Join(filepath.Dir(cfg.DB), "talondb.sock")
 	}
 
-	store, err := bboltstore.Open(cfg.DB)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	// A fresh follower bootstraps from the leader's Snapshot before it
+	// opens the store for serving.
+	var bootstrapSeq uint64
+	didBootstrap := false
+	if cfg.Role == "follower" && replica.NeedsBootstrap(cfg.DB) {
+		log.Printf("talondb-server: bootstrapping follower from leader %s", cfg.ReplicateFrom)
+		seq, err := replica.Bootstrap(ctx, cfg.ReplicateFrom, cfg.DB)
+		if err != nil {
+			log.Fatalf("talondb-server: bootstrap: %v", err)
+		}
+		bootstrapSeq = seq
+		didBootstrap = true
+		log.Printf("talondb-server: bootstrap installed at seq %d", seq)
+	}
+
+	var storeOpts []bboltstore.Option
+	if cfg.Role != "standalone" {
+		storeOpts = append(storeOpts, bboltstore.WithReplication(retention))
+	}
+	store, err := bboltstore.Open(cfg.DB, storeOpts...)
 	if err != nil {
 		log.Fatalf("talondb-server: open %q: %v", cfg.DB, err)
 	}
 	defer func() { _ = store.Close() }()
 
-	svc := grpcserver.New(store, store.Events(), version)
+	if didBootstrap {
+		if err := store.SetAppliedSeq(bootstrapSeq); err != nil {
+			log.Fatalf("talondb-server: set applied seq: %v", err)
+		}
+	}
+
+	srvOpts := []grpcserver.Option{grpcserver.WithRole(cfg.Role)}
+	if cfg.Role == "follower" {
+		srvOpts = append(srvOpts, grpcserver.WithReadOnly())
+	}
+	svc := grpcserver.New(store, store.Events(), version, srvOpts...)
 	grpcSrv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
 		grpc.ChainStreamInterceptor(grpc_prometheus.StreamServerInterceptor),
@@ -104,8 +162,15 @@ func main() {
 	talondbpb.RegisterTalonDBServiceServer(grpcSrv, svc)
 	grpc_prometheus.Register(grpcSrv)
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
+	// Follower: stream the leader's op-log in the background.
+	if cfg.Role == "follower" {
+		f := &replica.Follower{Store: store, LeaderAddr: cfg.ReplicateFrom, DBPath: cfg.DB}
+		go func() {
+			if err := f.Run(ctx); err != nil {
+				log.Fatalf("talondb-server: follower: %v", err)
+			}
+		}()
+	}
 
 	var wg sync.WaitGroup
 	httpSrv := (*http.Server)(nil)
