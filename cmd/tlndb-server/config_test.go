@@ -24,14 +24,14 @@ func TestResolveConfig_Defaults(t *testing.T) {
 func TestResolveConfig_FileOverlaysDefaults(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
-	if err := os.WriteFile(path, []byte("db: /data/talondb.bbolt\ntcp: \":9899\"\nhttp: \":8080\"\nmetrics: \":9090\"\n"), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte("db: /data/tlndb.bbolt\ntcp: \":9899\"\nhttp: \":8080\"\nmetrics: \":9090\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := resolveConfig(serverConfig{}, nil, path, envMap(nil))
 	if err != nil {
 		t.Fatalf("resolveConfig: %v", err)
 	}
-	if cfg.DB != "/data/talondb.bbolt" || cfg.TCP != ":9899" || cfg.HTTP != ":8080" || cfg.Metrics != ":9090" {
+	if cfg.DB != "/data/tlndb.bbolt" || cfg.TCP != ":9899" || cfg.HTTP != ":8080" || cfg.Metrics != ":9090" {
 		t.Fatalf("file overlay: got %+v", cfg)
 	}
 	if cfg.Socket != "" {
@@ -45,7 +45,7 @@ func TestResolveConfig_EnvBeatsFile(t *testing.T) {
 	if err := os.WriteFile(path, []byte("tcp: \":9899\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := resolveConfig(serverConfig{}, nil, path, envMap(map[string]string{"TALONDB_TCP": ":7000"}))
+	cfg, err := resolveConfig(serverConfig{}, nil, path, envMap(map[string]string{"TLNDB_TCP": ":7000"}))
 	if err != nil {
 		t.Fatalf("resolveConfig: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestResolveConfig_FlagBeatsEnvAndFile(t *testing.T) {
 		serverConfig{TCP: ":7001"},
 		map[string]bool{"tcp": true},
 		path,
-		envMap(map[string]string{"TALONDB_TCP": ":7000"}),
+		envMap(map[string]string{"TLNDB_TCP": ":7000"}),
 	)
 	if err != nil {
 		t.Fatalf("resolveConfig: %v", err)
@@ -81,7 +81,7 @@ func TestResolveConfig_UnsetFlagDoesNotClobber(t *testing.T) {
 		serverConfig{TCP: ""},
 		map[string]bool{}, // nothing explicitly set
 		"",
-		envMap(map[string]string{"TALONDB_TCP": ":7000"}),
+		envMap(map[string]string{"TLNDB_TCP": ":7000"}),
 	)
 	if err != nil {
 		t.Fatalf("resolveConfig: %v", err)
@@ -97,7 +97,7 @@ func TestResolveConfig_ExplicitEmptyFlagOverrides(t *testing.T) {
 		serverConfig{Socket: ""},
 		map[string]bool{"socket": true},
 		"",
-		envMap(map[string]string{"TALONDB_SOCKET": "/tmp/x.sock"}),
+		envMap(map[string]string{"TLNDB_SOCKET": "/tmp/x.sock"}),
 	)
 	if err != nil {
 		t.Fatalf("resolveConfig: %v", err)
@@ -113,12 +113,12 @@ func TestResolveConfig_ConfigPathFromEnv(t *testing.T) {
 	if err := os.WriteFile(path, []byte("http: \":8080\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := resolveConfig(serverConfig{}, nil, "", envMap(map[string]string{"TALONDB_CONFIG": path}))
+	cfg, err := resolveConfig(serverConfig{}, nil, "", envMap(map[string]string{"TLNDB_CONFIG": path}))
 	if err != nil {
 		t.Fatalf("resolveConfig: %v", err)
 	}
 	if cfg.HTTP != ":8080" {
-		t.Fatalf("TALONDB_CONFIG not honored: got %q", cfg.HTTP)
+		t.Fatalf("TLNDB_CONFIG not honored: got %q", cfg.HTTP)
 	}
 }
 

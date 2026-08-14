@@ -1,7 +1,7 @@
 // Package index provides backend-agnostic helpers for extracting
 // indexable terms from JSON documents. It is consumed by per-backend
 // indexers (e.g. internal/bboltstore) and never imported by the public
-// talondb surface.
+// tlndb surface.
 package index
 
 import (

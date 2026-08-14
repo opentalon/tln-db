@@ -1,23 +1,23 @@
-# talon-db
+# tln-db
 
-Go-native fact database for the [Talon language](https://github.com/opentalon/talon-language). Ships as a Go library for embedding and as a gRPC/HTTP sidecar (`talondb-server`) for sharing one store across multiple processes.
+Go-native fact database for the [Tln language](https://github.com/opentalon/tln-language). Ships as a Go library for embedding and as a gRPC/HTTP sidecar (`tlndb-server`) for sharing one store across multiple processes.
 
 **Status:** Phase 3a. Document store + full index engine + sidecar server + composite Query/SequenceJoin/ClusterQuery/Subscribe RPCs + per-scope HNSW vector index shipped. Mutation engine, script VM, and RETE incremental matcher are next.
 
 ## What this is
 
-talon-db is the Phase-3 storage backend behind the `FactStore` interface in `talon-language`. The pre-3 baseline is Datalevin (JVM); talon-db swaps that for a Go-native, bbolt-backed engine consumed either as a library (in-process) or via gRPC (Postgres-style local-socket sidecar).
+tln-db is the Phase-3 storage backend behind the `FactStore` interface in `tln-language`. The pre-3 baseline is Datalevin (JVM); tln-db swaps that for a Go-native, bbolt-backed engine consumed either as a library (in-process) or via gRPC (Postgres-style local-socket sidecar).
 
 It is built on four external Go primitives — `bbolt` (B+ tree storage), `RoaringBitmap` (compressed bitmap set ops), `vellum` (FST term dictionary; reserved for future prefix-accelerated lookups), and `snappy` (compression) — plus `google.golang.org/grpc` and `protobuf` for the wire protocol. Everything else is custom Go.
 
 ## Layers
 
 ```
-talon-db
+tln-db
   ├── Document store   ✅ bbolt + snappy + per-tenant buckets, ACID, SIGKILL-durable
   ├── Index engine     ✅ inverted (roaring), numeric range, temporal, group-by,
   │                       closure table, Welford running stats, absence
-  ├── Public API       ✅ talondb.IndexedStore (Lookup, LookupPrefix,
+  ├── Public API       ✅ tlndb.IndexedStore (Lookup, LookupPrefix,
   │                       LookupNumericRange, WindowQuery, GroupCount, Stats,
   │                       LastSeen, LastWritten, Ancestors, Descendants)
   ├── Composite RPCs   ✅ structured Query (Pattern/Predicate/Or/Not/FullText +
@@ -27,7 +27,7 @@ talon-db
   ├── Vector index     ✅ per-(entity, scope) HNSW with dimension locked on
   │                       first insert; cosine + Euclidean; bbolt-backed
   │                       persistence + rebuild-on-Open
-  ├── Sidecar          ✅ talondb-server: gRPC over Unix socket / TCP, HTTP/JSON
+  ├── Sidecar          ✅ tlndb-server: gRPC over Unix socket / TCP, HTTP/JSON
   ├── Mutation engine  ⏳ pre-commit hooks, reactive triggers, transactions (#29)
   ├── Script engine    ⏳ bytecode VM, cache, registry (#30)
   └── RETE engine      ⏳ incremental match for reactive blocks (#89)
@@ -35,19 +35,19 @@ talon-db
 
 ## Quick start — library
 
-Embed talon-db directly in your Go program. Open the store, then use the `IndexedStore` surface; closing flushes to disk.
+Embed tln-db directly in your Go program. Open the store, then use the `IndexedStore` surface; closing flushes to disk.
 
 ```go
 import (
-    talondb "github.com/opentalon/talon-db"
-    "github.com/opentalon/talon-db/bboltstore"
+    tlndb "github.com/opentalon/tln-db"
+    "github.com/opentalon/tln-db/bboltstore"
 )
 
-store, err := bboltstore.Open("talon.db")
+store, err := bboltstore.Open("tln.db")
 if err != nil { log.Fatal(err) }
 defer store.Close()
 
-var _ talondb.IndexedStore = store  // type-check the surface
+var _ tlndb.IndexedStore = store  // type-check the surface
 
 ctx := context.Background()
 _ = store.Put(ctx, "tenant-a", "vehicle-1",
@@ -60,16 +60,16 @@ got.ForEach(func(id string) bool { fmt.Println(id); return true })
 
 ## Quick start — sidecar
 
-Run `talondb-server` once and connect from multiple talon processes. Same flow Postgres uses: separate daemon, local socket by default.
+Run `tlndb-server` once and connect from multiple tln processes. Same flow Postgres uses: separate daemon, local socket by default.
 
 ```bash
-# Build (or `go install ./cmd/talondb-server`)
-go build -o /tmp/talondb-server ./cmd/talondb-server
+# Build (or `go install ./cmd/tlndb-server`)
+go build -o /tmp/tlndb-server ./cmd/tlndb-server
 
 # Run with a Unix socket (default), TCP, and HTTP all at once
-/tmp/talondb-server \
-  --db /var/lib/talondb.bbolt \
-  --socket /var/run/talondb.sock \
+/tmp/tlndb-server \
+  --db /var/lib/tlndb.bbolt \
+  --socket /var/run/tlndb.sock \
   --tcp :9899 \
   --http :8080
 ```
@@ -77,9 +77,9 @@ go build -o /tmp/talondb-server ./cmd/talondb-server
 On startup the server prints one handshake line per listener:
 
 ```
-talondb-server ready unix:///var/run/talondb.sock
-talondb-server ready tcp://0.0.0.0:9899
-talondb-server ready http://0.0.0.0:8080
+tlndb-server ready unix:///var/run/tlndb.sock
+tlndb-server ready tcp://0.0.0.0:9899
+tlndb-server ready http://0.0.0.0:8080
 ```
 
 SIGINT / SIGTERM trigger graceful shutdown.
@@ -91,13 +91,13 @@ import (
     "context"
     "google.golang.org/grpc"
     "google.golang.org/grpc/credentials/insecure"
-    pb "github.com/opentalon/talon-db/proto/talondbpb"
+    pb "github.com/opentalon/tln-db/proto/tlndbpb"
 )
 
-conn, _ := grpc.NewClient("unix:///var/run/talondb.sock",
+conn, _ := grpc.NewClient("unix:///var/run/tlndb.sock",
     grpc.WithTransportCredentials(insecure.NewCredentials()))
 defer conn.Close()
-svc := pb.NewTalonDBServiceClient(conn)
+svc := pb.NewTlnDBServiceClient(conn)
 
 svc.Put(ctx, &pb.PutRequest{
     EntityId: "tenant-a", DocId: "vehicle-1",
@@ -105,7 +105,7 @@ svc.Put(ctx, &pb.PutRequest{
 })
 ```
 
-For the `talon-language` consumer, this is wrapped in `internal/talondb` — `talon run --store talon-db --talondb unix:///path/to.sock` is all that's needed at the call site.
+For the `tln-language` consumer, this is wrapped in `internal/tlndb` — `tln run --store tln-db --tlndb unix:///path/to.sock` is all that's needed at the call site.
 
 ### HTTP / curl
 
@@ -142,7 +142,7 @@ curl -s http://localhost:8080/v1/health
 | Vector index | `VectorInsert`, `VectorSearch`, `VectorDelete`, `VectorDropScope`, `VectorListScopes` — per-(entity, scope) HNSW with cosine or Euclidean distance |
 | Ops | `Health` |
 
-Schema lives in [`proto/talondb.proto`](proto/talondb.proto). Generated Go bindings are committed at [`proto/talondbpb/`](proto/talondbpb/).
+Schema lives in [`proto/tlndb.proto`](proto/tlndb.proto). Generated Go bindings are committed at [`proto/tlndbpb/`](proto/tlndbpb/).
 
 ## Vector index
 
@@ -150,11 +150,11 @@ Each `(entity, scope)` pair owns its own HNSW graph; the dimension is locked on 
 
 ```go
 import (
-    "github.com/opentalon/talon-db/bboltstore"
-    "github.com/opentalon/talon-db/vectorindex"
+    "github.com/opentalon/tln-db/bboltstore"
+    "github.com/opentalon/tln-db/vectorindex"
 )
 
-store, _ := bboltstore.Open("talon.db")
+store, _ := bboltstore.Open("tln.db")
 defer store.Close()
 
 ctx := context.Background()
@@ -172,7 +172,7 @@ for _, h := range hits {
 
 The bbolt layer is authoritative: raw vector blobs live in `vec_data:{entity}:{scope}` and per-scope metadata in `vec_registry:{entity}`. On `Open` the in-memory HNSW is rebuilt by replaying every vector — a SIGKILL between commit and in-memory update can't lose data.
 
-Same surface over the wire via gRPC: `VectorInsert`, `VectorSearch`, `VectorDelete`, `VectorDropScope`, `VectorListScopes`. The wrapper in talon-language [`internal/talondb`](https://github.com/opentalon/talon-language/tree/master/internal/talondb) exposes these to `find similar ... using vector scope "X"` rules.
+Same surface over the wire via gRPC: `VectorInsert`, `VectorSearch`, `VectorDelete`, `VectorDropScope`, `VectorListScopes`. The wrapper in tln-language [`internal/tlndb`](https://github.com/opentalon/tln-language/tree/master/internal/tlndb) exposes these to `find similar ... using vector scope "X"` rules.
 
 ### Tuning
 
@@ -185,7 +185,7 @@ idx := vectorindex.NewWithOptions(vectorindex.Options{
 })
 ```
 
-The pipeline hits `recall@10 = 0.998` on SIFT-5K with these settings (see `vectorindex/sift_test.go`). Conformance against the full SIFT-1M corpus is env-gated behind `TALONDB_SIFT_PATH`; `TALONDB_SIFT_BASE_LIMIT` truncates the corpus for laptop-tractable runs.
+The pipeline hits `recall@10 = 0.998` on SIFT-5K with these settings (see `vectorindex/sift_test.go`). Conformance against the full SIFT-1M corpus is env-gated behind `TLNDB_SIFT_PATH`; `TLNDB_SIFT_BASE_LIMIT` truncates the corpus for laptop-tractable runs.
 
 ## Testing
 
@@ -195,18 +195,18 @@ go test -bench=. ./bboltstore/           # benchmarks
 go test -fuzz=FuzzPutGetRoundtrip ./bboltstore/   # fuzz
 ```
 
-The conformance suite in [`talondbtest`](talondbtest/) (`talondbtest.IndexedSuite`) is the same set future backends (Pebble, in-memory, etc.) will be run against; the bbolt backend passes it today.
+The conformance suite in [`tlndbtest`](tlndbtest/) (`tlndbtest.IndexedSuite`) is the same set future backends (Pebble, in-memory, etc.) will be run against; the bbolt backend passes it today.
 
 ## References
 
-- [opentalon/talon-language](https://github.com/opentalon/talon-language) — the consumer
-- [#25 — RFC: talon-db umbrella](https://github.com/opentalon/talon-language/issues/25)
-- [#26 — Document store](https://github.com/opentalon/talon-language/issues/26) (closed)
-- [#27 — Index engine](https://github.com/opentalon/talon-language/issues/27) (closed)
-- [#28 — Query engine composition](https://github.com/opentalon/talon-language/issues/28) (primitives shipped; sequence patterns + script integration remain)
-- [#29 — Mutation engine](https://github.com/opentalon/talon-language/issues/29)
-- [#30 — Script engine](https://github.com/opentalon/talon-language/issues/30)
-- [#89 — RETE incremental match engine](https://github.com/opentalon/talon-language/issues/89)
+- [opentalon/tln-language](https://github.com/opentalon/tln-language) — the consumer
+- [#25 — RFC: tln-db umbrella](https://github.com/opentalon/tln-language/issues/25)
+- [#26 — Document store](https://github.com/opentalon/tln-language/issues/26) (closed)
+- [#27 — Index engine](https://github.com/opentalon/tln-language/issues/27) (closed)
+- [#28 — Query engine composition](https://github.com/opentalon/tln-language/issues/28) (primitives shipped; sequence patterns + script integration remain)
+- [#29 — Mutation engine](https://github.com/opentalon/tln-language/issues/29)
+- [#30 — Script engine](https://github.com/opentalon/tln-language/issues/30)
+- [#89 — RETE incremental match engine](https://github.com/opentalon/tln-language/issues/89)
 
 ## License
 

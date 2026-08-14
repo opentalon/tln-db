@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opentalon/talon-db/bboltstore"
-	"github.com/opentalon/talon-db/grpcserver"
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/tln-db/bboltstore"
+	"github.com/opentalon/tln-db/grpcserver"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -19,7 +19,7 @@ const bufSize = 1024 * 1024
 
 // dial spins up a Server, registers it on an in-memory bufconn
 // listener, and returns a ready-to-use client + cleanup func.
-func dial(t *testing.T) (talondbpb.TalonDBServiceClient, func()) {
+func dial(t *testing.T) (tlndbpb.TlnDBServiceClient, func()) {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), "test.db")
@@ -30,7 +30,7 @@ func dial(t *testing.T) (talondbpb.TalonDBServiceClient, func()) {
 
 	lis := bufconn.Listen(bufSize)
 	srv := grpc.NewServer()
-	talondbpb.RegisterTalonDBServiceServer(srv, grpcserver.New(store, store.Events(), "test"))
+	tlndbpb.RegisterTlnDBServiceServer(srv, grpcserver.New(store, store.Events(), "test"))
 	go func() { _ = srv.Serve(lis) }()
 
 	conn, err := grpc.NewClient("passthrough://bufnet",
@@ -41,7 +41,7 @@ func dial(t *testing.T) (talondbpb.TalonDBServiceClient, func()) {
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
-	return talondbpb.NewTalonDBServiceClient(conn), func() {
+	return tlndbpb.NewTlnDBServiceClient(conn), func() {
 		_ = conn.Close()
 		srv.GracefulStop()
 		_ = store.Close()
@@ -54,13 +54,13 @@ func TestGRPCPutGetDelete(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	if _, err := client.Put(ctx, &talondbpb.PutRequest{
+	if _, err := client.Put(ctx, &tlndbpb.PutRequest{
 		EntityId: "tenant-a", DocId: "doc-1",
 		Doc: []byte(`{"hello":"world"}`),
 	}); err != nil {
 		t.Fatalf("Put: %v", err)
 	}
-	got, err := client.Get(ctx, &talondbpb.GetRequest{EntityId: "tenant-a", DocId: "doc-1"})
+	got, err := client.Get(ctx, &tlndbpb.GetRequest{EntityId: "tenant-a", DocId: "doc-1"})
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -68,10 +68,10 @@ func TestGRPCPutGetDelete(t *testing.T) {
 		t.Fatalf("Get: found=%v doc=%q", got.GetFound(), got.GetDoc())
 	}
 
-	if _, err := client.Delete(ctx, &talondbpb.DeleteRequest{EntityId: "tenant-a", DocId: "doc-1"}); err != nil {
+	if _, err := client.Delete(ctx, &tlndbpb.DeleteRequest{EntityId: "tenant-a", DocId: "doc-1"}); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	got, _ = client.Get(ctx, &talondbpb.GetRequest{EntityId: "tenant-a", DocId: "doc-1"})
+	got, _ = client.Get(ctx, &tlndbpb.GetRequest{EntityId: "tenant-a", DocId: "doc-1"})
 	if got.GetFound() {
 		t.Fatal("Get after Delete: still found")
 	}
@@ -83,16 +83,16 @@ func TestGRPCLookupRoundtrip(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	_, _ = client.Put(ctx, &talondbpb.PutRequest{
+	_, _ = client.Put(ctx, &tlndbpb.PutRequest{
 		EntityId: "tenant-a", DocId: "v1",
 		Doc: []byte(`{"status":"active","km":45000}`),
 	})
-	_, _ = client.Put(ctx, &talondbpb.PutRequest{
+	_, _ = client.Put(ctx, &tlndbpb.PutRequest{
 		EntityId: "tenant-a", DocId: "v2",
 		Doc: []byte(`{"status":"retired","km":99999}`),
 	})
 
-	list, err := client.Lookup(ctx, &talondbpb.LookupRequest{
+	list, err := client.Lookup(ctx, &tlndbpb.LookupRequest{
 		EntityId: "tenant-a", Term: "status:active",
 	})
 	if err != nil {
@@ -111,9 +111,9 @@ func TestGRPCNumericRange(t *testing.T) {
 
 	for i := 1; i <= 5; i++ {
 		body := []byte(`{"km":` + itoaTest(i*10) + `}`)
-		_, _ = client.Put(ctx, &talondbpb.PutRequest{EntityId: "tenant-a", DocId: docName(i), Doc: body})
+		_, _ = client.Put(ctx, &tlndbpb.PutRequest{EntityId: "tenant-a", DocId: docName(i), Doc: body})
 	}
-	list, err := client.LookupNumericRange(ctx, &talondbpb.NumericRangeRequest{
+	list, err := client.LookupNumericRange(ctx, &tlndbpb.NumericRangeRequest{
 		EntityId: "tenant-a", Attr: "km", Min: 20, Max: 40,
 	})
 	if err != nil {
@@ -131,12 +131,12 @@ func TestGRPCStats(t *testing.T) {
 	ctx := context.Background()
 
 	for i := 1; i <= 5; i++ {
-		_, _ = client.Put(ctx, &talondbpb.PutRequest{
+		_, _ = client.Put(ctx, &tlndbpb.PutRequest{
 			EntityId: "tenant-a", DocId: docName(i),
 			Doc: []byte(`{"km":` + itoaTest(i*10) + `}`),
 		})
 	}
-	resp, err := client.Stats(ctx, &talondbpb.StatsRequest{EntityId: "tenant-a", Attr: "km"})
+	resp, err := client.Stats(ctx, &tlndbpb.StatsRequest{EntityId: "tenant-a", Attr: "km"})
 	if err != nil {
 		t.Fatalf("Stats: %v", err)
 	}
@@ -162,7 +162,7 @@ func TestGRPCGetMissingReturnsFound0(t *testing.T) {
 	t.Parallel()
 	client, cleanup := dial(t)
 	defer cleanup()
-	resp, err := client.Get(context.Background(), &talondbpb.GetRequest{
+	resp, err := client.Get(context.Background(), &tlndbpb.GetRequest{
 		EntityId: "tenant-a", DocId: "no-such-doc",
 	})
 	if err != nil {

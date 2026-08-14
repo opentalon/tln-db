@@ -19,7 +19,7 @@ import (
 // per numeric leaf. Updates and Deletes set the Stale flag; the next
 // read recomputes from the numeric range index. This trade-off is
 // correct under arbitrary writes and fast in the append-mostly
-// workload talon-db targets.
+// workload tln-db targets.
 
 const statsPrefix = "stat:"
 

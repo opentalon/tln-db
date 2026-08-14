@@ -1,4 +1,4 @@
-package talondbtest
+package tlndbtest
 
 import (
 	"context"
@@ -7,16 +7,16 @@ import (
 	"sort"
 	"testing"
 
-	talondb "github.com/opentalon/talon-db"
+	tlndb "github.com/opentalon/tln-db"
 )
 
 // IndexedFactory builds a fresh, empty IndexedStore for a single
 // subtest. Same contract as Factory: must register cleanup via
 // t.Cleanup.
-type IndexedFactory func(t *testing.T) talondb.IndexedStore
+type IndexedFactory func(t *testing.T) tlndb.IndexedStore
 
 // IndexedSuite runs the per-block lookup contract specified by
-// talon-language issue #27 against the store produced by factory.
+// tln-language issue #27 against the store produced by factory.
 //
 // Specifications enforced:
 //
@@ -104,7 +104,7 @@ func indexedTestLookupNumericRange(t *testing.T, factory IndexedFactory) {
 	for i := 1; i <= 5; i++ {
 		mustPut(t, s, "tenant-a", docID(i), fmt.Sprintf(`{"km":%d}`, i*10))
 	}
-	got, err := s.LookupNumericRange(ctx, "tenant-a", "km", 20, 40, talondb.RangeOpts{})
+	got, err := s.LookupNumericRange(ctx, "tenant-a", "km", 20, 40, tlndb.RangeOpts{})
 	if err != nil {
 		t.Fatalf("LookupNumericRange: %v", err)
 	}
@@ -112,7 +112,7 @@ func indexedTestLookupNumericRange(t *testing.T, factory IndexedFactory) {
 	if !equalDocs(got, want) {
 		t.Fatalf("closed: got %v, want %v", collect(got), want)
 	}
-	got, _ = s.LookupNumericRange(ctx, "tenant-a", "km", 20, 40, talondb.RangeOpts{MinExclusive: true, MaxExclusive: true})
+	got, _ = s.LookupNumericRange(ctx, "tenant-a", "km", 20, 40, tlndb.RangeOpts{MinExclusive: true, MaxExclusive: true})
 	want = []string{"d3"}
 	if !equalDocs(got, want) {
 		t.Fatalf("open: got %v, want %v", collect(got), want)
@@ -121,7 +121,7 @@ func indexedTestLookupNumericRange(t *testing.T, factory IndexedFactory) {
 
 func indexedTestLookupNumericRangeNaN(t *testing.T, factory IndexedFactory) {
 	s := factory(t)
-	_, err := s.LookupNumericRange(context.Background(), "tenant-a", "km", math.NaN(), 10, talondb.RangeOpts{})
+	_, err := s.LookupNumericRange(context.Background(), "tenant-a", "km", math.NaN(), 10, tlndb.RangeOpts{})
 	if err == nil {
 		t.Fatal("expected error for NaN bound")
 	}
@@ -236,14 +236,14 @@ func indexedTestClosure(t *testing.T, factory IndexedFactory) {
 
 // ----- helpers -----
 
-func mustPut(t *testing.T, s talondb.IndexedStore, entityID, docID, body string) {
+func mustPut(t *testing.T, s tlndb.IndexedStore, entityID, docID, body string) {
 	t.Helper()
 	if err := s.Put(context.Background(), entityID, docID, []byte(body)); err != nil {
 		t.Fatalf("Put %q: %v", docID, err)
 	}
 }
 
-func collect(s talondb.DocIDSet) []string {
+func collect(s tlndb.DocIDSet) []string {
 	out := make([]string, 0, s.Len())
 	s.ForEach(func(id string) bool {
 		out = append(out, id)
@@ -253,7 +253,7 @@ func collect(s talondb.DocIDSet) []string {
 	return out
 }
 
-func equalDocs(s talondb.DocIDSet, want []string) bool {
+func equalDocs(s tlndb.DocIDSet, want []string) bool {
 	got := collect(s)
 	sort.Strings(want)
 	if len(got) != len(want) {

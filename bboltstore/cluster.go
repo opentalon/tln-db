@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	talondb "github.com/opentalon/talon-db"
+	tlndb "github.com/opentalon/tln-db"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -27,7 +27,7 @@ import (
 // run of ≥ minSize matching events becomes a single cluster.
 //
 // `minSize` < 1 is normalised to 1.
-func (s *Store) ClusterQuery(ctx context.Context, entityID, itemID string, types []string, window time.Duration, minSize int) ([]talondb.TemporalCluster, error) {
+func (s *Store) ClusterQuery(ctx context.Context, entityID, itemID string, types []string, window time.Duration, minSize int) ([]tlndb.TemporalCluster, error) {
 	if err := validateEntityID(entityID); err != nil {
 		return nil, err
 	}
@@ -51,11 +51,11 @@ func (s *Store) ClusterQuery(ctx context.Context, entityID, itemID string, types
 // clusterScan is the pure-function core of ClusterQuery — extracted so
 // it can be unit-tested without bbolt. Callers must pass `entries`
 // sorted by At ascending (temporalRead guarantees this).
-func clusterScan(entries []temporalEntry, window time.Duration, minSize int) []talondb.TemporalCluster {
+func clusterScan(entries []temporalEntry, window time.Duration, minSize int) []tlndb.TemporalCluster {
 	if len(entries) == 0 || minSize > len(entries) {
 		return nil
 	}
-	var out []talondb.TemporalCluster
+	var out []tlndb.TemporalCluster
 	windowNanos := window.Nanoseconds()
 	noUpper := windowNanos <= 0
 
@@ -71,15 +71,15 @@ func clusterScan(entries []temporalEntry, window time.Duration, minSize int) []t
 		}
 		size := j - i + 1
 		if size >= minSize {
-			events := make([]talondb.TemporalEvent, 0, size)
+			events := make([]tlndb.TemporalEvent, 0, size)
 			for k := i; k <= j; k++ {
-				events = append(events, talondb.TemporalEvent{
+				events = append(events, tlndb.TemporalEvent{
 					DocID: entries[k].DocID,
 					Type:  entries[k].Type,
 					At:    time.Unix(0, entries[k].At),
 				})
 			}
-			out = append(out, talondb.TemporalCluster{
+			out = append(out, tlndb.TemporalCluster{
 				First:  time.Unix(0, entries[i].At),
 				Last:   time.Unix(0, entries[j].At),
 				Events: events,

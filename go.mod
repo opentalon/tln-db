@@ -1,4 +1,4 @@
-module github.com/opentalon/talon-db
+module github.com/opentalon/tln-db
 
 go 1.25.0
 

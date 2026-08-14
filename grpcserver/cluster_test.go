@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 )
 
 // putEvent writes a temporal-shaped doc to the test server.
-func putEvent(t *testing.T, c talondbpb.TalonDBServiceClient, docID, itemID, recordType string, at time.Time) {
+func putEvent(t *testing.T, c tlndbpb.TlnDBServiceClient, docID, itemID, recordType string, at time.Time) {
 	t.Helper()
 	doc := fmt.Sprintf(`{"item_id":%q,"type":%q,"at":%d}`, itemID, recordType, at.UnixNano())
-	if _, err := c.Put(context.Background(), &talondbpb.PutRequest{
+	if _, err := c.Put(context.Background(), &tlndbpb.PutRequest{
 		EntityId: "tenant-a",
 		DocId:    docID,
 		Doc:      []byte(doc),
@@ -39,7 +39,7 @@ func TestGRPCClusterQueryDetectsThreeFailuresWithin90Days(t *testing.T) {
 	putEvent(t, c, "e4", "truck-7", "failure", base.Add(200*day))
 	putEvent(t, c, "e5", "truck-7", "failure", base.Add(205*day))
 
-	resp, err := c.ClusterQuery(ctx, &talondbpb.ClusterQueryRequest{
+	resp, err := c.ClusterQuery(ctx, &tlndbpb.ClusterQueryRequest{
 		EntityId:    "tenant-a",
 		ItemId:      "truck-7",
 		Types:       []string{"failure"},
@@ -80,7 +80,7 @@ func TestGRPCClusterQueryRespectsTypeFilter(t *testing.T) {
 	putEvent(t, c, "e5", "truck-7", "failure", base.Add(4*day))
 
 	// Filter to failures only — 3 of them within 90 days.
-	resp, err := c.ClusterQuery(ctx, &talondbpb.ClusterQueryRequest{
+	resp, err := c.ClusterQuery(ctx, &tlndbpb.ClusterQueryRequest{
 		EntityId:    "tenant-a",
 		ItemId:      "truck-7",
 		Types:       []string{"failure"},
@@ -106,7 +106,7 @@ func TestGRPCClusterQueryEmptyWhenItemAbsent(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	resp, err := c.ClusterQuery(ctx, &talondbpb.ClusterQueryRequest{
+	resp, err := c.ClusterQuery(ctx, &tlndbpb.ClusterQueryRequest{
 		EntityId:    "tenant-a",
 		ItemId:      "nobody",
 		WindowNanos: int64(24 * time.Hour),
@@ -132,7 +132,7 @@ func TestGRPCClusterQueryWindowTooNarrow(t *testing.T) {
 	putEvent(t, c, "e2", "truck-7", "failure", base.Add(10*day))
 	putEvent(t, c, "e3", "truck-7", "failure", base.Add(20*day))
 
-	resp, err := c.ClusterQuery(ctx, &talondbpb.ClusterQueryRequest{
+	resp, err := c.ClusterQuery(ctx, &tlndbpb.ClusterQueryRequest{
 		EntityId:    "tenant-a",
 		ItemId:      "truck-7",
 		WindowNanos: int64(5 * day), // any pair is > 5 days apart

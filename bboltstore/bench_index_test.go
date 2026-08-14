@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"testing"
 
-	talondb "github.com/opentalon/talon-db"
+	tlndb "github.com/opentalon/tln-db"
 )
 
 const prepN = 1000
@@ -63,7 +63,7 @@ func BenchmarkIndexLookupNumericRange(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := s.LookupNumericRange(ctx, "tenant-a", "km", 2000, 8000, talondb.RangeOpts{}); err != nil {
+		if _, err := s.LookupNumericRange(ctx, "tenant-a", "km", 2000, 8000, tlndb.RangeOpts{}); err != nil {
 			b.Fatalf("LookupNumericRange: %v", err)
 		}
 	}

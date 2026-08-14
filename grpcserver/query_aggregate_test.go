@@ -6,7 +6,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
@@ -14,7 +14,7 @@ import (
 // seedItemsForAgg writes N item docs through Put. Each doc carries
 // :record/type=item, :record/status=<status>, :attr/km=<km> so the
 // aggregate queries below can bind ?km from the JSON.
-func seedItemsForAgg(t *testing.T, c talondbpb.TalonDBServiceClient, items []struct {
+func seedItemsForAgg(t *testing.T, c tlndbpb.TlnDBServiceClient, items []struct {
 	id     string
 	status string
 	km     float64
@@ -22,7 +22,7 @@ func seedItemsForAgg(t *testing.T, c talondbpb.TalonDBServiceClient, items []str
 	t.Helper()
 	for _, it := range items {
 		doc := fmt.Sprintf(`{":record/type":"item",":record/status":%q,":attr/km":%g}`, it.status, it.km)
-		if _, err := c.Put(context.Background(), &talondbpb.PutRequest{
+		if _, err := c.Put(context.Background(), &tlndbpb.PutRequest{
 			EntityId: "tenant-a", DocId: it.id, Doc: []byte(doc),
 		}); err != nil {
 			t.Fatalf("Put %s: %v", it.id, err)
@@ -40,15 +40,15 @@ func TestGRPCQueryAggregateCount(t *testing.T) {
 		km     float64
 	}{{"1", "active", 100}, {"2", "active", 200}, {"3", "retired", 300}})
 
-	resp, err := c.Query(context.Background(), &talondbpb.QueryRequest{
+	resp, err := c.Query(context.Background(), &tlndbpb.QueryRequest{
 		EntityId: "tenant-a",
 		Find:     []string{"?e"},
-		Where: []*talondbpb.Clause{
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+		Where: []*tlndbpb.Clause{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":record/type", Value: strTerm("item"),
 			}}},
 		},
-		Aggregates: []*talondbpb.Aggregate{
+		Aggregates: []*tlndbpb.Aggregate{
 			{Fn: "count", Over: varTerm("?e"), As: "n"},
 		},
 	})
@@ -73,18 +73,18 @@ func TestGRPCQueryAggregateSumAvgMinMax(t *testing.T) {
 		km     float64
 	}{{"1", "active", 10}, {"2", "active", 20}, {"3", "active", 30}, {"4", "active", 40}, {"5", "active", 50}})
 
-	resp, err := c.Query(context.Background(), &talondbpb.QueryRequest{
+	resp, err := c.Query(context.Background(), &tlndbpb.QueryRequest{
 		EntityId: "tenant-a",
 		Find:     []string{"?e", "?km"},
-		Where: []*talondbpb.Clause{
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+		Where: []*tlndbpb.Clause{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":record/type", Value: strTerm("item"),
 			}}},
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":attr/km", Value: varTerm("?km"),
 			}}},
 		},
-		Aggregates: []*talondbpb.Aggregate{
+		Aggregates: []*tlndbpb.Aggregate{
 			{Fn: "sum", Over: varTerm("?km")},
 			{Fn: "avg", Over: varTerm("?km")},
 			{Fn: "min", Over: varTerm("?km")},
@@ -123,22 +123,22 @@ func TestGRPCQueryAggregateGroupBy(t *testing.T) {
 		{"6", "scheduled", 5},
 	})
 
-	resp, err := c.Query(context.Background(), &talondbpb.QueryRequest{
+	resp, err := c.Query(context.Background(), &tlndbpb.QueryRequest{
 		EntityId: "tenant-a",
 		Find:     []string{"?status"},
-		Where: []*talondbpb.Clause{
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+		Where: []*tlndbpb.Clause{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":record/type", Value: strTerm("item"),
 			}}},
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":record/status", Value: varTerm("?status"),
 			}}},
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":attr/km", Value: varTerm("?km"),
 			}}},
 		},
 		GroupBy: []string{"?status"},
-		Aggregates: []*talondbpb.Aggregate{
+		Aggregates: []*tlndbpb.Aggregate{
 			{Fn: "count", Over: varTerm("?e")},
 			{Fn: "sum", Over: varTerm("?km")},
 		},
@@ -185,15 +185,15 @@ func TestGRPCQueryAggregateRejectsUnknownFn(t *testing.T) {
 	t.Parallel()
 	c, cleanup := dial(t)
 	defer cleanup()
-	_, err := c.Query(context.Background(), &talondbpb.QueryRequest{
+	_, err := c.Query(context.Background(), &tlndbpb.QueryRequest{
 		EntityId: "tenant-a",
 		Find:     []string{"?e"},
-		Where: []*talondbpb.Clause{
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+		Where: []*tlndbpb.Clause{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":record/type", Value: strTerm("item"),
 			}}},
 		},
-		Aggregates: []*talondbpb.Aggregate{
+		Aggregates: []*tlndbpb.Aggregate{
 			{Fn: "stddev", Over: varTerm("?e")}, // not implemented
 		},
 	})

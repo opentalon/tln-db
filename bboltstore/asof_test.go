@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentalon/talon-db/bboltstore"
+	"github.com/opentalon/tln-db/bboltstore"
 )
 
 // putJSON marshals fields to JSON and Puts them as the document.

@@ -1,4 +1,4 @@
-package talondb
+package tlndb
 
 import (
 	"context"
@@ -8,20 +8,20 @@ import (
 
 // ErrNotFound is returned by Get when no document exists for the given
 // entityID and docID.
-var ErrNotFound = errors.New("talondb: document not found")
+var ErrNotFound = errors.New("tlndb: document not found")
 
 // ErrSnapshotRequired is returned when a replication follower requests a
 // log position older than the leader's retained window; the follower
 // must re-bootstrap from a fresh Snapshot.
-var ErrSnapshotRequired = errors.New("talondb: requested seq older than retained min_seq; snapshot required")
+var ErrSnapshotRequired = errors.New("tlndb: requested seq older than retained min_seq; snapshot required")
 
 // ErrInvalidEntityID is returned when an entityID is empty or contains a
 // reserved character. The colon (":") separates the bucket prefix from
 // the tenant name in the on-disk layout, so it cannot appear inside an
 // entityID.
-var ErrInvalidEntityID = errors.New("talondb: invalid entity id")
+var ErrInvalidEntityID = errors.New("tlndb: invalid entity id")
 
-// DocumentStore is the storage primitive talon-db exposes to the rest of
+// DocumentStore is the storage primitive tln-db exposes to the rest of
 // the system. It stores opaque byte blobs (in practice JSON-encoded
 // documents) under a two-level key: entityID (tenant) and docID. Per-
 // entity buckets keep tenants strictly isolated.

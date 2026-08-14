@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"math"
 
-	talondb "github.com/opentalon/talon-db"
-	"github.com/opentalon/talon-db/proto/talondbpb"
-	"github.com/opentalon/talon-db/vectorindex"
+	tlndb "github.com/opentalon/tln-db"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
+	"github.com/opentalon/tln-db/vectorindex"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -122,8 +122,8 @@ func (s *Store) VectorInsert(ctx context.Context, entityID, scope, id string, ve
 		}
 		finalMetric = m
 		if s.replEnabled {
-			if _, err := appendOpLog(tx, &talondbpb.OpLogEntry{
-				Kind:     talondbpb.OpKind_OP_KIND_VEC_INSERT,
+			if _, err := appendOpLog(tx, &tlndbpb.OpLogEntry{
+				Kind:     tlndbpb.OpKind_OP_KIND_VEC_INSERT,
 				EntityId: entityID,
 				DocId:    id,
 				Scope:    scope,
@@ -191,7 +191,7 @@ func (s *Store) VectorSearch(ctx context.Context, entityID, scope string, query 
 }
 
 // VectorDelete removes (entityID, scope, id) from both bbolt and the
-// in-memory graph. Returns talondb.ErrNotFound when the id never
+// in-memory graph. Returns tlndb.ErrNotFound when the id never
 // existed in the scope.
 func (s *Store) VectorDelete(ctx context.Context, entityID, scope, id string) error {
 	if err := ctx.Err(); err != nil {
@@ -212,8 +212,8 @@ func (s *Store) VectorDelete(ctx context.Context, entityID, scope, id string) er
 		}
 		found = f
 		if f && s.replEnabled {
-			if _, err := appendOpLog(tx, &talondbpb.OpLogEntry{
-				Kind:     talondbpb.OpKind_OP_KIND_VEC_DELETE,
+			if _, err := appendOpLog(tx, &tlndbpb.OpLogEntry{
+				Kind:     tlndbpb.OpKind_OP_KIND_VEC_DELETE,
 				EntityId: entityID,
 				DocId:    id,
 				Scope:    scope,
@@ -227,7 +227,7 @@ func (s *Store) VectorDelete(ctx context.Context, entityID, scope, id string) er
 		return err
 	}
 	if !found {
-		return talondb.ErrNotFound
+		return tlndb.ErrNotFound
 	}
 	if s.replEnabled {
 		s.signalRepl()
@@ -247,7 +247,7 @@ func vectorDeleteInTx(tx *bolt.Tx, entityID, scope, id string) (bool, error) {
 }
 
 // VectorDropScope removes every vector under (entityID, scope), the
-// data bucket, and the registry entry. Returns talondb.ErrNotFound
+// data bucket, and the registry entry. Returns tlndb.ErrNotFound
 // when the scope never existed.
 func (s *Store) VectorDropScope(ctx context.Context, entityID, scope string) error {
 	if err := ctx.Err(); err != nil {
@@ -268,8 +268,8 @@ func (s *Store) VectorDropScope(ctx context.Context, entityID, scope string) err
 		}
 		found = f
 		if f && s.replEnabled {
-			if _, err := appendOpLog(tx, &talondbpb.OpLogEntry{
-				Kind:     talondbpb.OpKind_OP_KIND_VEC_DROP_SCOPE,
+			if _, err := appendOpLog(tx, &tlndbpb.OpLogEntry{
+				Kind:     tlndbpb.OpKind_OP_KIND_VEC_DROP_SCOPE,
 				EntityId: entityID,
 				Scope:    scope,
 			}); err != nil {
@@ -282,7 +282,7 @@ func (s *Store) VectorDropScope(ctx context.Context, entityID, scope string) err
 		return err
 	}
 	if !found {
-		return talondb.ErrNotFound
+		return tlndb.ErrNotFound
 	}
 	if s.replEnabled {
 		s.signalRepl()

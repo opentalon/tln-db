@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	talondb "github.com/opentalon/talon-db"
-	"github.com/opentalon/talon-db/bboltstore"
-	"github.com/opentalon/talon-db/grpcserver"
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	tlndb "github.com/opentalon/tln-db"
+	"github.com/opentalon/tln-db/bboltstore"
+	"github.com/opentalon/tln-db/grpcserver"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,7 +25,7 @@ const subBufSize = 1 << 20
 // dialSub spins up a real bboltstore + grpcserver behind a bufconn,
 // returns a connected client + the store (for direct mutation) +
 // cleanup func.
-func dialSub(t *testing.T) (talondbpb.TalonDBServiceClient, *bboltstore.Store, func()) {
+func dialSub(t *testing.T) (tlndbpb.TlnDBServiceClient, *bboltstore.Store, func()) {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), "sub.db")
@@ -36,7 +36,7 @@ func dialSub(t *testing.T) (talondbpb.TalonDBServiceClient, *bboltstore.Store, f
 
 	lis := bufconn.Listen(subBufSize)
 	srv := grpc.NewServer()
-	talondbpb.RegisterTalonDBServiceServer(srv, grpcserver.New(store, store.Events(), "test"))
+	tlndbpb.RegisterTlnDBServiceServer(srv, grpcserver.New(store, store.Events(), "test"))
 	go func() { _ = srv.Serve(lis) }()
 
 	conn, err := grpc.NewClient("passthrough://bufnet",
@@ -47,7 +47,7 @@ func dialSub(t *testing.T) (talondbpb.TalonDBServiceClient, *bboltstore.Store, f
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
-	return talondbpb.NewTalonDBServiceClient(conn), store, func() {
+	return tlndbpb.NewTlnDBServiceClient(conn), store, func() {
 		_ = conn.Close()
 		srv.GracefulStop()
 		_ = store.Close()
@@ -56,12 +56,12 @@ func dialSub(t *testing.T) (talondbpb.TalonDBServiceClient, *bboltstore.Store, f
 
 // receiveN reads up to `want` events from the stream with a per-call
 // timeout. Returns the events received and any error.
-func receiveN(t *testing.T, stream talondbpb.TalonDBService_SubscribeClient, want int, perEventTimeout time.Duration) []*talondbpb.MutationEvent {
+func receiveN(t *testing.T, stream tlndbpb.TlnDBService_SubscribeClient, want int, perEventTimeout time.Duration) []*tlndbpb.MutationEvent {
 	t.Helper()
-	out := make([]*talondbpb.MutationEvent, 0, want)
+	out := make([]*tlndbpb.MutationEvent, 0, want)
 	for i := 0; i < want; i++ {
 		type recvResult struct {
-			ev  *talondbpb.MutationEvent
+			ev  *tlndbpb.MutationEvent
 			err error
 		}
 		ch := make(chan recvResult, 1)
@@ -92,7 +92,7 @@ func TestSubscribeAssertChangeRetract(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	stream, err := client.Subscribe(ctx, &talondbpb.SubscribeRequest{})
+	stream, err := client.Subscribe(ctx, &tlndbpb.SubscribeRequest{})
 	if err != nil {
 		t.Fatalf("Subscribe: %v", err)
 	}
@@ -114,10 +114,10 @@ func TestSubscribeAssertChangeRetract(t *testing.T) {
 	if len(got) != 3 {
 		t.Fatalf("got %d events, want 3", len(got))
 	}
-	want := []talondbpb.MutationEventKind{
-		talondbpb.MutationEventKind_MUTATION_EVENT_KIND_ASSERT,
-		talondbpb.MutationEventKind_MUTATION_EVENT_KIND_CHANGE,
-		talondbpb.MutationEventKind_MUTATION_EVENT_KIND_RETRACT,
+	want := []tlndbpb.MutationEventKind{
+		tlndbpb.MutationEventKind_MUTATION_EVENT_KIND_ASSERT,
+		tlndbpb.MutationEventKind_MUTATION_EVENT_KIND_CHANGE,
+		tlndbpb.MutationEventKind_MUTATION_EVENT_KIND_RETRACT,
 	}
 	for i, w := range want {
 		if got[i].GetKind() != w {
@@ -145,7 +145,7 @@ func TestSubscribeEntityFilter(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	stream, err := client.Subscribe(ctx, &talondbpb.SubscribeRequest{EntityId: "tenant-a"})
+	stream, err := client.Subscribe(ctx, &tlndbpb.SubscribeRequest{EntityId: "tenant-a"})
 	if err != nil {
 		t.Fatalf("Subscribe: %v", err)
 	}
@@ -180,7 +180,7 @@ func TestSubscribePrefixFilter(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	stream, err := client.Subscribe(ctx, &talondbpb.SubscribeRequest{DocIdPrefix: "ticket-"})
+	stream, err := client.Subscribe(ctx, &tlndbpb.SubscribeRequest{DocIdPrefix: "ticket-"})
 	if err != nil {
 		t.Fatalf("Subscribe: %v", err)
 	}
@@ -211,9 +211,9 @@ func TestSubscribeMultipleSubscribersEachGetCopy(t *testing.T) {
 	defer cancel()
 
 	const n = 3
-	streams := make([]talondbpb.TalonDBService_SubscribeClient, n)
+	streams := make([]tlndbpb.TlnDBService_SubscribeClient, n)
 	for i := range streams {
-		s, err := client.Subscribe(ctx, &talondbpb.SubscribeRequest{})
+		s, err := client.Subscribe(ctx, &tlndbpb.SubscribeRequest{})
 		if err != nil {
 			t.Fatalf("Subscribe %d: %v", i, err)
 		}
@@ -228,7 +228,7 @@ func TestSubscribeMultipleSubscribersEachGetCopy(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 	for i, s := range streams {
-		go func(i int, s talondbpb.TalonDBService_SubscribeClient) {
+		go func(i int, s tlndbpb.TlnDBService_SubscribeClient) {
 			defer wg.Done()
 			got := receiveN(t, s, 1, 2*time.Second)
 			if len(got) != 1 || got[0].GetDocId() != "doc-1" {
@@ -245,7 +245,7 @@ func TestSubscribeStreamEndsOnCancel(t *testing.T) {
 	defer cleanup()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	stream, err := client.Subscribe(ctx, &talondbpb.SubscribeRequest{})
+	stream, err := client.Subscribe(ctx, &tlndbpb.SubscribeRequest{})
 	if err != nil {
 		t.Fatalf("Subscribe: %v", err)
 	}
@@ -276,7 +276,7 @@ func TestSubscribeDoesNotBlockCommits(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	stream, err := client.Subscribe(ctx, &talondbpb.SubscribeRequest{})
+	stream, err := client.Subscribe(ctx, &tlndbpb.SubscribeRequest{})
 	if err != nil {
 		t.Fatalf("Subscribe: %v", err)
 	}
@@ -313,5 +313,5 @@ func intToStr(n int) string {
 	return string(buf[i:])
 }
 
-// keep talondb import live in case of future test additions
-var _ talondb.EventKind
+// keep tlndb import live in case of future test additions
+var _ tlndb.EventKind

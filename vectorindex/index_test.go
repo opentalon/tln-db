@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/opentalon/talon-db/vectorindex"
+	"github.com/opentalon/tln-db/vectorindex"
 )
 
 func TestInsertSearchRoundtrip(t *testing.T) {

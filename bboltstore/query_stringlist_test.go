@@ -3,7 +3,7 @@ package bboltstore
 import "testing"
 
 // String predicates against a list-valued attribute quantify existentially:
-// the predicate holds when any element satisfies it (talon-language #158).
+// the predicate holds when any element satisfies it (tln-language #158).
 // The inverted index already gathers such documents as candidates; this is
 // the verify step agreeing with it.
 func TestEvalQueryPredicateQuantifiesOverList(t *testing.T) {

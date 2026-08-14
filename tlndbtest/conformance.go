@@ -1,5 +1,5 @@
-// Package talondbtest provides a reusable conformance suite for any
-// implementation of talondb.DocumentStore. Each backend (bboltstore
+// Package tlndbtest provides a reusable conformance suite for any
+// implementation of tlndb.DocumentStore. Each backend (bboltstore
 // today, Pebble or in-memory tomorrow) wires the suite into its own
 // _test.go with a factory and gets the full contract checked for free.
 //
@@ -8,7 +8,7 @@
 //  1. PutGetRoundtrip — bytes written by Put are returned by Get
 //     unchanged for the same (entityID, docID).
 //  2. GetMissingReturnsErrNotFound — Get for an absent (entity, doc)
-//     returns talondb.ErrNotFound via errors.Is, never a nil slice.
+//     returns tlndb.ErrNotFound via errors.Is, never a nil slice.
 //  3. DeleteIdempotent — Delete on a missing doc is a no-op and never
 //     errors; deleting twice in a row never errors.
 //  4. BatchPutAtomic — every (key, value) in the input map is readable
@@ -35,7 +35,7 @@
 // Backend-specific quirks (snappy compression in bboltstore, the colon
 // restriction on entityIDs, the version counter) are NOT part of the
 // contract and are tested directly in each backend's package.
-package talondbtest
+package tlndbtest
 
 import (
 	"bytes"
@@ -45,13 +45,13 @@ import (
 	"testing"
 	"time"
 
-	talondb "github.com/opentalon/talon-db"
+	tlndb "github.com/opentalon/tln-db"
 )
 
 // Factory builds a fresh, empty DocumentStore for a single subtest. It
 // must register any cleanup (closing the store, removing files) via
 // t.Cleanup so subtests can run in parallel.
-type Factory func(t *testing.T) talondb.DocumentStore
+type Factory func(t *testing.T) tlndb.DocumentStore
 
 // Suite runs every conformance test against the store produced by
 // factory. Each subtest receives its own store.
@@ -121,7 +121,7 @@ func testGetMissing(t *testing.T, factory Factory) {
 				}
 			}
 			_, err := s.Get(ctx, tc.queryEntity, tc.queryDocID)
-			if !errors.Is(err, talondb.ErrNotFound) {
+			if !errors.Is(err, tlndb.ErrNotFound) {
 				t.Fatalf("Get: got %v, want ErrNotFound", err)
 			}
 		})
@@ -143,7 +143,7 @@ func testDeleteIdempotent(t *testing.T, factory Factory) {
 	if err := s.Delete(ctx, "tenant-a", "doc-1"); err != nil {
 		t.Fatalf("Delete second: %v", err)
 	}
-	if _, err := s.Get(ctx, "tenant-a", "doc-1"); !errors.Is(err, talondb.ErrNotFound) {
+	if _, err := s.Get(ctx, "tenant-a", "doc-1"); !errors.Is(err, tlndb.ErrNotFound) {
 		t.Fatalf("Get after delete: got %v, want ErrNotFound", err)
 	}
 }
@@ -183,7 +183,7 @@ func testBatchPutRollback(t *testing.T, factory Factory) {
 		t.Fatalf("BatchPut: got %v, want context.Canceled", err)
 	}
 	for _, k := range []string{"x", "y"} {
-		if _, err := s.Get(context.Background(), "tenant-a", k); !errors.Is(err, talondb.ErrNotFound) {
+		if _, err := s.Get(context.Background(), "tenant-a", k); !errors.Is(err, tlndb.ErrNotFound) {
 			t.Fatalf("Get %q after rollback: got %v, want ErrNotFound", k, err)
 		}
 	}
@@ -198,7 +198,7 @@ func testBatchPutInvalid(t *testing.T, factory Factory) {
 	if err := s.BatchPut(context.Background(), "tenant-a", docs); err == nil {
 		t.Fatal("BatchPut: expected error for empty docID")
 	}
-	if _, err := s.Get(context.Background(), "tenant-a", "a"); !errors.Is(err, talondb.ErrNotFound) {
+	if _, err := s.Get(context.Background(), "tenant-a", "a"); !errors.Is(err, tlndb.ErrNotFound) {
 		t.Fatalf("'a' should not have been written: %v", err)
 	}
 }

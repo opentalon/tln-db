@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opentalon/talon-db/bboltstore"
-	"github.com/opentalon/talon-db/grpcserver"
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/tln-db/bboltstore"
+	"github.com/opentalon/tln-db/grpcserver"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -19,11 +19,11 @@ import (
 
 // dialRepl starts a Server over the given store with the given options
 // and returns a client + cleanup.
-func dialRepl(t *testing.T, store *bboltstore.Store, opts ...grpcserver.Option) (talondbpb.TalonDBServiceClient, func()) {
+func dialRepl(t *testing.T, store *bboltstore.Store, opts ...grpcserver.Option) (tlndbpb.TlnDBServiceClient, func()) {
 	t.Helper()
 	lis := bufconn.Listen(bufSize)
 	srv := grpc.NewServer()
-	talondbpb.RegisterTalonDBServiceServer(srv, grpcserver.New(store, store.Events(), "test", opts...))
+	tlndbpb.RegisterTlnDBServiceServer(srv, grpcserver.New(store, store.Events(), "test", opts...))
 	go func() { _ = srv.Serve(lis) }()
 	conn, err := grpc.NewClient("passthrough://bufnet",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -31,7 +31,7 @@ func dialRepl(t *testing.T, store *bboltstore.Store, opts ...grpcserver.Option) 
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
-	return talondbpb.NewTalonDBServiceClient(conn), func() {
+	return tlndbpb.NewTlnDBServiceClient(conn), func() {
 		_ = conn.Close()
 		srv.GracefulStop()
 	}
@@ -48,7 +48,7 @@ func TestReadOnlyRejectsWrites(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	_, err = client.Put(ctx, &talondbpb.PutRequest{EntityId: "t", DocId: "a", Doc: []byte(`{}`)})
+	_, err = client.Put(ctx, &tlndbpb.PutRequest{EntityId: "t", DocId: "a", Doc: []byte(`{}`)})
 	if status.Code(err) != codes.FailedPrecondition {
 		t.Fatalf("Put on read-only: want FailedPrecondition, got %v", err)
 	}
@@ -91,7 +91,7 @@ func TestReplicateRPC(t *testing.T) {
 
 	streamCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	stream, err := client.Replicate(streamCtx, &talondbpb.ReplicateRequest{FromSeq: 1})
+	stream, err := client.Replicate(streamCtx, &tlndbpb.ReplicateRequest{FromSeq: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
