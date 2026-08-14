@@ -3,7 +3,7 @@ package bboltstore
 import (
 	"fmt"
 
-	"github.com/opentalon/talon-db/internal/index"
+	"github.com/opentalon/tln-db/internal/index"
 	bolt "go.etcd.io/bbolt"
 )
 

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/opentalon/talon-db/bboltstore"
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/tln-db/bboltstore"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,16 +17,16 @@ import (
 // into the bboltstore composer's input types, running the composer,
 // and encoding result rows back to google.protobuf.Value.
 //
-// The Server takes any talondb.IndexedStore in its constructor, but
+// The Server takes any tlndb.IndexedStore in its constructor, but
 // the structured Query composer lives on bboltstore.Store specifically
 // (it needs the bbolt-level Lookup + index access for narrowing). If
 // the configured store isn't a bboltstore.Store, Query returns
 // codes.Unimplemented — non-bbolt backends would need to ship their
 // own composer.
-func (s *Server) Query(ctx context.Context, req *talondbpb.QueryRequest) (*talondbpb.QueryResponse, error) {
+func (s *Server) Query(ctx context.Context, req *tlndbpb.QueryRequest) (*tlndbpb.QueryResponse, error) {
 	bbolt, ok := s.store.(*bboltstore.Store)
 	if !ok {
-		return nil, status.Error(codes.Unimplemented, "talondb: structured Query requires a bboltstore backend")
+		return nil, status.Error(codes.Unimplemented, "tlndb: structured Query requires a bboltstore backend")
 	}
 	clauses, err := decodeQueryClauses(req.GetWhere())
 	if err != nil {
@@ -52,10 +52,10 @@ func (s *Server) Query(ctx context.Context, req *talondbpb.QueryRequest) (*talon
 // QueryAsOf handles the time-travel query RPC. It shares Query's clause
 // decoding and row encoding, delegating to the store's history-backed
 // composer at the requested instant.
-func (s *Server) QueryAsOf(ctx context.Context, req *talondbpb.QueryAsOfRequest) (*talondbpb.QueryResponse, error) {
+func (s *Server) QueryAsOf(ctx context.Context, req *tlndbpb.QueryAsOfRequest) (*tlndbpb.QueryResponse, error) {
 	bbolt, ok := s.store.(*bboltstore.Store)
 	if !ok {
-		return nil, status.Error(codes.Unimplemented, "talondb: structured QueryAsOf requires a bboltstore backend")
+		return nil, status.Error(codes.Unimplemented, "tlndb: structured QueryAsOf requires a bboltstore backend")
 	}
 	clauses, err := decodeQueryClauses(req.GetWhere())
 	if err != nil {
@@ -79,8 +79,8 @@ func (s *Server) QueryAsOf(ctx context.Context, req *talondbpb.QueryAsOfRequest)
 }
 
 // encodeQueryResponse projects composer rows into the proto response.
-func encodeQueryResponse(rows []bboltstore.QueryRow) (*talondbpb.QueryResponse, error) {
-	out := &talondbpb.QueryResponse{Rows: make([]*talondbpb.QueryRow, 0, len(rows))}
+func encodeQueryResponse(rows []bboltstore.QueryRow) (*tlndbpb.QueryResponse, error) {
+	out := &tlndbpb.QueryResponse{Rows: make([]*tlndbpb.QueryRow, 0, len(rows))}
 	for _, row := range rows {
 		values := make([]*structpb.Value, 0, len(row))
 		for _, v := range row {
@@ -90,12 +90,12 @@ func encodeQueryResponse(rows []bboltstore.QueryRow) (*talondbpb.QueryResponse, 
 			}
 			values = append(values, pv)
 		}
-		out.Rows = append(out.Rows, &talondbpb.QueryRow{Values: values})
+		out.Rows = append(out.Rows, &tlndbpb.QueryRow{Values: values})
 	}
 	return out, nil
 }
 
-func decodeQueryClauses(in []*talondbpb.Clause) ([]bboltstore.QueryClause, error) {
+func decodeQueryClauses(in []*tlndbpb.Clause) ([]bboltstore.QueryClause, error) {
 	out := make([]bboltstore.QueryClause, 0, len(in))
 	for _, c := range in {
 		decoded, err := decodeQueryClause(c)
@@ -107,24 +107,24 @@ func decodeQueryClauses(in []*talondbpb.Clause) ([]bboltstore.QueryClause, error
 	return out, nil
 }
 
-func decodeQueryClause(c *talondbpb.Clause) (bboltstore.QueryClause, error) {
+func decodeQueryClause(c *tlndbpb.Clause) (bboltstore.QueryClause, error) {
 	if c == nil {
 		return bboltstore.QueryClause{}, fmt.Errorf("nil clause")
 	}
 	switch x := c.GetClause().(type) {
-	case *talondbpb.Clause_Pattern:
+	case *tlndbpb.Clause_Pattern:
 		return bboltstore.QueryClause{Pattern: &bboltstore.QueryPattern{
 			Entity:    decodeTerm(x.Pattern.GetEntity()),
 			Attribute: x.Pattern.GetAttribute(),
 			Value:     decodeTerm(x.Pattern.GetValue()),
 		}}, nil
-	case *talondbpb.Clause_Predicate:
+	case *tlndbpb.Clause_Predicate:
 		return bboltstore.QueryClause{Predicate: &bboltstore.QueryPredicate{
 			Op:    x.Predicate.GetOp(),
 			Left:  decodeTerm(x.Predicate.GetLeft()),
 			Right: decodeTerm(x.Predicate.GetRight()),
 		}}, nil
-	case *talondbpb.Clause_Or:
+	case *tlndbpb.Clause_Or:
 		branches := make([][]bboltstore.QueryClause, 0, len(x.Or.GetBranches()))
 		for _, b := range x.Or.GetBranches() {
 			decoded, err := decodeQueryClauses(b.GetClauses())
@@ -134,13 +134,13 @@ func decodeQueryClause(c *talondbpb.Clause) (bboltstore.QueryClause, error) {
 			branches = append(branches, decoded)
 		}
 		return bboltstore.QueryClause{Or: &bboltstore.QueryOr{Branches: branches}}, nil
-	case *talondbpb.Clause_Not:
+	case *tlndbpb.Clause_Not:
 		body, err := decodeQueryClauses(x.Not.GetBody())
 		if err != nil {
 			return bboltstore.QueryClause{}, err
 		}
 		return bboltstore.QueryClause{Not: &bboltstore.QueryNot{Body: body}}, nil
-	case *talondbpb.Clause_Fulltext:
+	case *tlndbpb.Clause_Fulltext:
 		return bboltstore.QueryClause{FullText: &bboltstore.QueryFullText{
 			Entity:    decodeTerm(x.Fulltext.GetEntity()),
 			Query:     x.Fulltext.GetQuery(),
@@ -150,7 +150,7 @@ func decodeQueryClause(c *talondbpb.Clause) (bboltstore.QueryClause, error) {
 	return bboltstore.QueryClause{}, fmt.Errorf("unknown clause variant")
 }
 
-func decodeAggregates(in []*talondbpb.Aggregate) ([]bboltstore.QueryAggregate, error) {
+func decodeAggregates(in []*tlndbpb.Aggregate) ([]bboltstore.QueryAggregate, error) {
 	if len(in) == 0 {
 		return nil, nil
 	}
@@ -170,7 +170,7 @@ func decodeAggregates(in []*talondbpb.Aggregate) ([]bboltstore.QueryAggregate, e
 	return out, nil
 }
 
-func decodeTerm(t *talondbpb.Term) bboltstore.QueryTerm {
+func decodeTerm(t *tlndbpb.Term) bboltstore.QueryTerm {
 	if t == nil {
 		return bboltstore.QueryTerm{}
 	}

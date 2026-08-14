@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	talondb "github.com/opentalon/talon-db"
+	tlndb "github.com/opentalon/tln-db"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -15,12 +15,12 @@ import (
 // total span at most `window`. Empty `itemIDs` scans every item
 // recorded under entityID.
 //
-// Matching algorithm — equivalent to talon-language's
+// Matching algorithm — equivalent to tln-language's
 // internal/executor/event_sequence.matchesSequence: for each starting
 // event whose type equals steps[0], greedily walk forward looking for
 // each subsequent step. The (first, last) span must be ≤ window;
 // window=0 means no upper bound. First successful walk per item wins.
-func (s *Store) SequenceJoin(ctx context.Context, entityID string, itemIDs, steps []string, window time.Duration) ([]talondb.SequenceMatch, error) {
+func (s *Store) SequenceJoin(ctx context.Context, entityID string, itemIDs, steps []string, window time.Duration) ([]tlndb.SequenceMatch, error) {
 	if err := validateEntityID(entityID); err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (s *Store) SequenceJoin(ctx context.Context, entityID string, itemIDs, step
 	}
 
 	windowNanos := window.Nanoseconds()
-	out := make([]talondb.SequenceMatch, 0)
+	out := make([]tlndb.SequenceMatch, 0)
 	for _, item := range items {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -67,15 +67,15 @@ func (s *Store) SequenceJoin(ctx context.Context, entityID string, itemIDs, step
 		if matched == nil {
 			continue
 		}
-		events := make([]talondb.TemporalEvent, len(matched))
+		events := make([]tlndb.TemporalEvent, len(matched))
 		for i, e := range matched {
-			events[i] = talondb.TemporalEvent{
+			events[i] = tlndb.TemporalEvent{
 				DocID: e.DocID,
 				Type:  e.Type,
 				At:    time.Unix(0, e.At),
 			}
 		}
-		out = append(out, talondb.SequenceMatch{ItemID: item, Events: events})
+		out = append(out, tlndb.SequenceMatch{ItemID: item, Events: events})
 	}
 	return out, nil
 }

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	talondb "github.com/opentalon/talon-db"
+	tlndb "github.com/opentalon/tln-db"
 )
 
 func TestPutThenLookup(t *testing.T) {
@@ -123,7 +123,7 @@ func TestLookupOpaqueBytesIsNoOp(t *testing.T) {
 	}
 }
 
-func flatten(s talondb.DocIDSet) []string {
+func flatten(s tlndb.DocIDSet) []string {
 	out := make([]string, 0, s.Len())
 	s.ForEach(func(id string) bool {
 		out = append(out, id)
@@ -133,7 +133,7 @@ func flatten(s talondb.DocIDSet) []string {
 	return out
 }
 
-func sameDocs(s talondb.DocIDSet, want []string) bool {
+func sameDocs(s tlndb.DocIDSet, want []string) bool {
 	got := flatten(s)
 	sort.Strings(want)
 	if len(got) != len(want) {

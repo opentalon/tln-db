@@ -1,4 +1,4 @@
-// Package replica implements the follower side of talon-db's async
+// Package replica implements the follower side of tln-db's async
 // streaming read-replication. A follower bootstraps from a leader's
 // Snapshot, then tails the leader's op-log via Replicate, applying each
 // entry to its local store. It serves reads only; writes are rejected by
@@ -14,8 +14,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/opentalon/talon-db/bboltstore"
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/tln-db/bboltstore"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -52,8 +52,8 @@ func Bootstrap(ctx context.Context, leaderAddr, dbPath string) (uint64, error) {
 	}
 	defer func() { _ = conn.Close() }()
 
-	client := talondbpb.NewTalonDBServiceClient(conn)
-	stream, err := client.Snapshot(ctx, &talondbpb.SnapshotRequest{})
+	client := tlndbpb.NewTlnDBServiceClient(conn)
+	stream, err := client.Snapshot(ctx, &tlndbpb.SnapshotRequest{})
 	if err != nil {
 		return 0, fmt.Errorf("replica: open snapshot stream: %w", err)
 	}
@@ -134,7 +134,7 @@ func (f *Follower) Run(ctx context.Context) error {
 		if applied > 0 {
 			backoff = time.Second // made progress; reset backoff
 		}
-		log.Printf("talondb-replica: stream error (retrying in %s): %v", backoff, err)
+		log.Printf("tlndb-replica: stream error (retrying in %s): %v", backoff, err)
 		select {
 		case <-ctx.Done():
 			return nil
@@ -156,9 +156,9 @@ func (f *Follower) stream(ctx context.Context) (int, error) {
 	}
 	defer func() { _ = conn.Close() }()
 
-	client := talondbpb.NewTalonDBServiceClient(conn)
+	client := tlndbpb.NewTlnDBServiceClient(conn)
 	from := f.Store.AppliedSeq() + 1
-	stream, err := client.Replicate(ctx, &talondbpb.ReplicateRequest{FromSeq: from})
+	stream, err := client.Replicate(ctx, &tlndbpb.ReplicateRequest{FromSeq: from})
 	if err != nil {
 		return 0, err
 	}

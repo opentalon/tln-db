@@ -1,4 +1,4 @@
-package talondb
+package tlndb
 
 import (
 	"context"
@@ -9,11 +9,11 @@ import (
 // ErrStatsStale is returned by Stats when the last Delete invalidated
 // the running aggregate and the backend has not yet recomputed it.
 // Callers may retry — recomputation is automatic on the next read.
-var ErrStatsStale = errors.New("talondb: running stats stale, recompute in progress")
+var ErrStatsStale = errors.New("tlndb: running stats stale, recompute in progress")
 
 // ErrInvalidValue is returned when a numeric query receives NaN or
 // infinity, neither of which has a defined position in the index.
-var ErrInvalidValue = errors.New("talondb: invalid numeric value")
+var ErrInvalidValue = errors.New("tlndb: invalid numeric value")
 
 // DocIDSet is the iteration surface over query results. Backends may
 // back it with roaring bitmaps; callers must not assume the underlying
@@ -88,7 +88,7 @@ type RunningStats struct {
 }
 
 // IndexedStore extends DocumentStore with the per-block lookup methods
-// described in talon-language issue #27. Backends are free to implement
+// described in tln-language issue #27. Backends are free to implement
 // only a subset, in which case unimplemented methods return a wrapped
 // errors.ErrUnsupported.
 type IndexedStore interface {

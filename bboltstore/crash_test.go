@@ -33,12 +33,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentalon/talon-db/bboltstore"
+	"github.com/opentalon/tln-db/bboltstore"
 )
 
 const (
-	crashChildEnv  = "TALONDB_CRASH_CHILD"
-	crashPathEnv   = "TALONDB_CRASH_PATH"
+	crashChildEnv  = "TLNDB_CRASH_CHILD"
+	crashPathEnv   = "TLNDB_CRASH_PATH"
 	crashDocCount  = 50
 	crashTenantID  = "tenant-crash"
 )

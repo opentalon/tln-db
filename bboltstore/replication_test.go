@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	talondb "github.com/opentalon/talon-db"
-	"github.com/opentalon/talon-db/proto/talondbpb"
-	"github.com/opentalon/talon-db/vectorindex"
+	tlndb "github.com/opentalon/tln-db"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
+	"github.com/opentalon/tln-db/vectorindex"
 )
 
 func openRepl(t *testing.T, retention uint64) *Store {
@@ -27,7 +27,7 @@ func openRepl(t *testing.T, retention uint64) *Store {
 // applyAll copies every op-log entry from leader into follower.
 func applyAll(t *testing.T, leader, follower *Store, from uint64) {
 	t.Helper()
-	if err := leader.ReadOpLog(from, func(e *talondbpb.OpLogEntry) error {
+	if err := leader.ReadOpLog(from, func(e *tlndbpb.OpLogEntry) error {
 		return follower.ApplyEntry(e)
 	}); err != nil {
 		t.Fatalf("apply: %v", err)
@@ -52,8 +52,8 @@ func TestOpLogSeqMonotonic(t *testing.T) {
 	}
 
 	var seqs []uint64
-	var kinds []talondbpb.OpKind
-	if err := s.ReadOpLog(1, func(e *talondbpb.OpLogEntry) error {
+	var kinds []tlndbpb.OpKind
+	if err := s.ReadOpLog(1, func(e *tlndbpb.OpLogEntry) error {
 		seqs = append(seqs, e.Seq)
 		kinds = append(kinds, e.Kind)
 		return nil
@@ -69,7 +69,7 @@ func TestOpLogSeqMonotonic(t *testing.T) {
 			t.Fatalf("seq[%d]=%d want %d", i, seqs[i], want[i])
 		}
 	}
-	if kinds[0] != talondbpb.OpKind_OP_KIND_DOC_ASSERT || kinds[2] != talondbpb.OpKind_OP_KIND_DOC_CHANGE || kinds[3] != talondbpb.OpKind_OP_KIND_DOC_RETRACT {
+	if kinds[0] != tlndbpb.OpKind_OP_KIND_DOC_ASSERT || kinds[2] != tlndbpb.OpKind_OP_KIND_DOC_CHANGE || kinds[3] != tlndbpb.OpKind_OP_KIND_DOC_RETRACT {
 		t.Fatalf("unexpected kinds: %v", kinds)
 	}
 	if s.CurrentSeq() != 4 {
@@ -127,7 +127,7 @@ func TestApplyReproducesLeaderState(t *testing.T) {
 		}
 	}
 	// Deleted doc absent on follower.
-	if _, err := follower.Get(ctx, "t", "u2"); !errors.Is(err, talondb.ErrNotFound) {
+	if _, err := follower.Get(ctx, "t", "u2"); !errors.Is(err, tlndb.ErrNotFound) {
 		t.Fatalf("u2 should be deleted on follower, got %v", err)
 	}
 
@@ -267,8 +267,8 @@ func TestTailSnapshotRequiredAfterTrim(t *testing.T) {
 		t.Fatalf("expected min_seq to advance, got %d", s.MinSeq())
 	}
 	// Requesting a trimmed-away seq must signal snapshot-required.
-	err := s.TailOpLog(ctx, 1, func(*talondbpb.OpLogEntry) error { return nil })
-	if !errors.Is(err, talondb.ErrSnapshotRequired) {
+	err := s.TailOpLog(ctx, 1, func(*tlndbpb.OpLogEntry) error { return nil })
+	if !errors.Is(err, tlndb.ErrSnapshotRequired) {
 		t.Fatalf("want ErrSnapshotRequired, got %v", err)
 	}
 }

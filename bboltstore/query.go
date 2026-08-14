@@ -104,7 +104,7 @@ type QueryRow []any
 // inverted index, then per-doc Go-side clause evaluation. Returns one
 // QueryRow per matched candidate, projected to req.Find.
 //
-// The algorithm mirrors the talon-language adapter so server-side and
+// The algorithm mirrors the tln-language adapter so server-side and
 // client-side composition behave identically:
 //
 //  1. Collect top-level Patterns whose attribute AND value are both
@@ -132,7 +132,7 @@ func (s *Store) Query(ctx context.Context, req QueryRequest) ([]QueryRow, error)
 		if len(req.Aggregates) > 0 {
 			// Datalog semantics: empty match set with no GroupBy still
 			// yields one row of zeros. Mirrors MemoryStore / the
-			// talon-language adapter.
+			// tln-language adapter.
 			return runQueryAggregates(nil, req.GroupBy, req.Aggregates), nil
 		}
 		return nil, nil

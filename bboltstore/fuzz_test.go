@@ -29,8 +29,8 @@ import (
 	"strings"
 	"testing"
 
-	talondb "github.com/opentalon/talon-db"
-	"github.com/opentalon/talon-db/bboltstore"
+	tlndb "github.com/opentalon/tln-db"
+	"github.com/opentalon/tln-db/bboltstore"
 )
 
 func fuzzStore(f *testing.F) *bboltstore.Store {
@@ -118,7 +118,7 @@ func FuzzValidationRejection(f *testing.F) {
 		if gerr == nil {
 			t.Fatalf("Get of invalid (entity=%q doc=%q) should have errored", entityID, docID)
 		}
-		if errors.Is(gerr, talondb.ErrNotFound) && entityID != "" && !strings.ContainsRune(entityID, ':') {
+		if errors.Is(gerr, tlndb.ErrNotFound) && entityID != "" && !strings.ContainsRune(entityID, ':') {
 			// ErrNotFound is acceptable for a valid-entity-but-empty-docID case
 			// where validation might bottom out at the docID check.
 			return

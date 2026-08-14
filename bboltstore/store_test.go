@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	talondb "github.com/opentalon/talon-db"
-	"github.com/opentalon/talon-db/bboltstore"
-	"github.com/opentalon/talon-db/talondbtest"
+	tlndb "github.com/opentalon/tln-db"
+	"github.com/opentalon/tln-db/bboltstore"
+	"github.com/opentalon/tln-db/tlndbtest"
 )
 
 // newStore returns a fresh, isolated *bboltstore.Store backed by a
@@ -29,7 +29,7 @@ func newStore(t *testing.T) *bboltstore.Store {
 // TestConformance runs the backend-agnostic DocumentStore contract
 // against the bbolt implementation.
 func TestConformance(t *testing.T) {
-	talondbtest.Suite(t, func(t *testing.T) talondb.DocumentStore {
+	tlndbtest.Suite(t, func(t *testing.T) tlndb.DocumentStore {
 		return newStore(t)
 	})
 }

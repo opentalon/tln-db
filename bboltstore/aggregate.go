@@ -7,7 +7,7 @@ import (
 
 // runQueryAggregates is the server-side aggregator used by Store.Query
 // when QueryRequest.Aggregates is non-empty. Mirrors the
-// talon-language adapter's runAggregates (which in turn mirrors
+// tln-language adapter's runAggregates (which in turn mirrors
 // MemoryStore.runAggregates) — same input shape, same output shape,
 // same group-key sort, so client-side and server-side composition
 // return identical rows.

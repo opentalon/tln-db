@@ -1,11 +1,11 @@
-package talondb
+package tlndb
 
 import (
 	"context"
 	"sync"
 )
 
-// EventKind classifies a MutationEvent. Mirrors talon-language's
+// EventKind classifies a MutationEvent. Mirrors tln-language's
 // factstore.EventKind so the adapter can map straight across.
 type EventKind int
 

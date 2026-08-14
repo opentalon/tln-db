@@ -1,19 +1,19 @@
-// talondb-server is the standalone gRPC daemon that fronts a bbolt-
-// backed talon-db. It exposes the TalonDBService over a Unix socket
+// tlndb-server is the standalone gRPC daemon that fronts a bbolt-
+// backed tln-db. It exposes the TlnDBService over a Unix socket
 // (primary), an optional TCP port (for remote callers), and an
 // optional HTTP/JSON endpoint (for curl / non-Go clients) that
 // translates JSON requests into in-process gRPC calls.
 //
 // Usage:
 //
-//	talondb-server --db ./talondb.bbolt
-//	talondb-server --db ./talondb.bbolt --socket /tmp/talondb.sock --tcp :9899
-//	talondb-server --db ./talondb.bbolt --http :8080
-//	talondb-server --config /etc/talondb/config.yaml --metrics :9090
+//	tlndb-server --db ./tlndb.bbolt
+//	tlndb-server --db ./tlndb.bbolt --socket /tmp/tlndb.sock --tcp :9899
+//	tlndb-server --db ./tlndb.bbolt --http :8080
+//	tlndb-server --config /etc/tlndb/config.yaml --metrics :9090
 //
-// Configuration may also come from a YAML file (--config / TALONDB_CONFIG)
-// and TALONDB_* environment variables (TALONDB_DB, TALONDB_SOCKET,
-// TALONDB_TCP, TALONDB_HTTP, TALONDB_METRICS). Precedence, low to high:
+// Configuration may also come from a YAML file (--config / TLNDB_CONFIG)
+// and TLNDB_* environment variables (TLNDB_DB, TLNDB_SOCKET,
+// TLNDB_TCP, TLNDB_HTTP, TLNDB_METRICS). Precedence, low to high:
 // built-in defaults < config file < env vars < explicit flags. This lets a
 // Kubernetes ConfigMap or Secret drive the server. When --metrics is set,
 // Prometheus metrics are served at GET /metrics on that address.
@@ -21,9 +21,9 @@
 // On successful startup the server prints exactly one handshake line
 // to stdout per listener — e.g.
 //
-//	talondb-server ready unix:///tmp/talondb.sock
-//	talondb-server ready tcp://0.0.0.0:9899
-//	talondb-server ready http://0.0.0.0:8080
+//	tlndb-server ready unix:///tmp/tlndb.sock
+//	tlndb-server ready tcp://0.0.0.0:9899
+//	tlndb-server ready http://0.0.0.0:8080
 //
 // — so wrapper scripts can grep stdout for "ready" before issuing
 // client calls. SIGINT and SIGTERM trigger a graceful shutdown.
@@ -46,10 +46,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/opentalon/talon-db/bboltstore"
-	"github.com/opentalon/talon-db/grpcserver"
-	"github.com/opentalon/talon-db/proto/talondbpb"
-	"github.com/opentalon/talon-db/replica"
+	"github.com/opentalon/tln-db/bboltstore"
+	"github.com/opentalon/tln-db/grpcserver"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
+	"github.com/opentalon/tln-db/replica"
 
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -65,19 +65,19 @@ var version = "dev"
 
 func main() {
 	var (
-		dbPath         = flag.String("db", "talondb.bbolt", "path to the bbolt data file")
+		dbPath         = flag.String("db", "tlndb.bbolt", "path to the bbolt data file")
 		socketPath     = flag.String("socket", "", "Unix-socket path for gRPC (empty = no Unix socket)")
 		tcpAddr        = flag.String("tcp", "", "TCP address for gRPC (empty = no TCP listener), e.g. :9899")
 		httpAddr       = flag.String("http", "", "TCP address for HTTP/JSON (empty = no HTTP listener), e.g. :8080")
 		metricsAddr    = flag.String("metrics", "", "TCP address for Prometheus /metrics (empty = disabled), e.g. :9090")
-		configPath     = flag.String("config", "", "path to a YAML config file (also TALONDB_CONFIG)")
+		configPath     = flag.String("config", "", "path to a YAML config file (also TLNDB_CONFIG)")
 		roleFlag       = flag.String("role", "standalone", "replication role: standalone | leader | follower")
 		replicateFrom  = flag.String("replicate-from", "", "follower: leader gRPC address, e.g. leader:9899")
 		oplogRetention = flag.String("oplog-retention", "", "leader/follower: max op-log entries kept (default 100000; 0 = keep all)")
 	)
 	flag.Parse()
 
-	// Resolve configuration: defaults < config file < TALONDB_* env < flags.
+	// Resolve configuration: defaults < config file < TLNDB_* env < flags.
 	setFlags := map[string]bool{}
 	flag.Visit(func(f *flag.Flag) { setFlags[f.Name] = true })
 	cfg, err := resolveConfig(
@@ -90,30 +90,30 @@ func main() {
 		os.Getenv,
 	)
 	if err != nil {
-		log.Fatalf("talondb-server: %v", err)
+		log.Fatalf("tlndb-server: %v", err)
 	}
 
 	switch cfg.Role {
 	case "standalone", "leader", "follower":
 	default:
-		log.Fatalf("talondb-server: invalid role %q (want standalone|leader|follower)", cfg.Role)
+		log.Fatalf("tlndb-server: invalid role %q (want standalone|leader|follower)", cfg.Role)
 	}
 	if cfg.Role == "follower" && cfg.ReplicateFrom == "" {
-		log.Fatalf("talondb-server: --replicate-from (TALONDB_REPLICATE_FROM) is required for role=follower")
+		log.Fatalf("tlndb-server: --replicate-from (TLNDB_REPLICATE_FROM) is required for role=follower")
 	}
 
 	retention := uint64(100000)
 	if cfg.OplogRetention != "" {
 		n, err := strconv.ParseUint(cfg.OplogRetention, 10, 64)
 		if err != nil {
-			log.Fatalf("talondb-server: invalid oplog-retention %q: %v", cfg.OplogRetention, err)
+			log.Fatalf("tlndb-server: invalid oplog-retention %q: %v", cfg.OplogRetention, err)
 		}
 		retention = n
 	}
 
 	if cfg.Socket == "" && cfg.TCP == "" && cfg.HTTP == "" {
 		// Default behaviour: a Unix socket next to the data file.
-		cfg.Socket = filepath.Join(filepath.Dir(cfg.DB), "talondb.sock")
+		cfg.Socket = filepath.Join(filepath.Dir(cfg.DB), "tlndb.sock")
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -124,14 +124,14 @@ func main() {
 	var bootstrapSeq uint64
 	didBootstrap := false
 	if cfg.Role == "follower" && replica.NeedsBootstrap(cfg.DB) {
-		log.Printf("talondb-server: bootstrapping follower from leader %s", cfg.ReplicateFrom)
+		log.Printf("tlndb-server: bootstrapping follower from leader %s", cfg.ReplicateFrom)
 		seq, err := replica.Bootstrap(ctx, cfg.ReplicateFrom, cfg.DB)
 		if err != nil {
-			log.Fatalf("talondb-server: bootstrap: %v", err)
+			log.Fatalf("tlndb-server: bootstrap: %v", err)
 		}
 		bootstrapSeq = seq
 		didBootstrap = true
-		log.Printf("talondb-server: bootstrap installed at seq %d", seq)
+		log.Printf("tlndb-server: bootstrap installed at seq %d", seq)
 	}
 
 	var storeOpts []bboltstore.Option
@@ -140,13 +140,13 @@ func main() {
 	}
 	store, err := bboltstore.Open(cfg.DB, storeOpts...)
 	if err != nil {
-		log.Fatalf("talondb-server: open %q: %v", cfg.DB, err)
+		log.Fatalf("tlndb-server: open %q: %v", cfg.DB, err)
 	}
 	defer func() { _ = store.Close() }()
 
 	if didBootstrap {
 		if err := store.SetAppliedSeq(bootstrapSeq); err != nil {
-			log.Fatalf("talondb-server: set applied seq: %v", err)
+			log.Fatalf("tlndb-server: set applied seq: %v", err)
 		}
 	}
 
@@ -159,7 +159,7 @@ func main() {
 		grpc.ChainUnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
 		grpc.ChainStreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 	)
-	talondbpb.RegisterTalonDBServiceServer(grpcSrv, svc)
+	tlndbpb.RegisterTlnDBServiceServer(grpcSrv, svc)
 	grpc_prometheus.Register(grpcSrv)
 
 	// Follower: stream the leader's op-log in the background.
@@ -167,7 +167,7 @@ func main() {
 		f := &replica.Follower{Store: store, LeaderAddr: cfg.ReplicateFrom, DBPath: cfg.DB}
 		go func() {
 			if err := f.Run(ctx); err != nil {
-				log.Fatalf("talondb-server: follower: %v", err)
+				log.Fatalf("tlndb-server: follower: %v", err)
 			}
 		}()
 	}
@@ -179,7 +179,7 @@ func main() {
 	if cfg.Socket != "" {
 		ln, err := listenUnix(cfg.Socket)
 		if err != nil {
-			log.Fatalf("talondb-server: %v", err)
+			log.Fatalf("tlndb-server: %v", err)
 		}
 		defer func() { _ = os.Remove(cfg.Socket) }()
 		announce("unix://" + cfg.Socket)
@@ -187,7 +187,7 @@ func main() {
 		go func() {
 			defer wg.Done()
 			if err := grpcSrv.Serve(ln); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
-				log.Printf("talondb-server: unix serve: %v", err)
+				log.Printf("tlndb-server: unix serve: %v", err)
 			}
 		}()
 	}
@@ -195,14 +195,14 @@ func main() {
 	if cfg.TCP != "" {
 		ln, err := net.Listen("tcp", cfg.TCP)
 		if err != nil {
-			log.Fatalf("talondb-server: tcp listen %q: %v", cfg.TCP, err)
+			log.Fatalf("tlndb-server: tcp listen %q: %v", cfg.TCP, err)
 		}
 		announce("tcp://" + ln.Addr().String())
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			if err := grpcSrv.Serve(ln); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
-				log.Printf("talondb-server: tcp serve: %v", err)
+				log.Printf("tlndb-server: tcp serve: %v", err)
 			}
 		}()
 	}
@@ -216,7 +216,7 @@ func main() {
 	}
 
 	<-ctx.Done()
-	log.Printf("talondb-server: shutdown signal received")
+	log.Printf("tlndb-server: shutdown signal received")
 
 	grpcSrv.GracefulStop()
 	shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 5*time.Second)
@@ -243,7 +243,7 @@ func startMetricsServer(addr string, wg *sync.WaitGroup) *http.Server {
 	go func() {
 		defer wg.Done()
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("talondb-server: metrics: %v", err)
+			log.Printf("tlndb-server: metrics: %v", err)
 		}
 	}()
 	return srv
@@ -266,7 +266,7 @@ func listenUnix(path string) (net.Listener, error) {
 }
 
 func announce(target string) {
-	fmt.Printf("talondb-server ready %s\n", target)
+	fmt.Printf("tlndb-server ready %s\n", target)
 }
 
 // startHTTPServer exposes a JSON-over-HTTP surface that mirrors the
@@ -276,91 +276,91 @@ func announce(target string) {
 func startHTTPServer(addr string, svc *grpcserver.Server, wg *sync.WaitGroup) *http.Server {
 	mux := http.NewServeMux()
 	register(mux, "Put", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.PutRequest{}
+		req := &tlndbpb.PutRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.Put(ctx, req)
 	})
 	register(mux, "Get", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.GetRequest{}
+		req := &tlndbpb.GetRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.Get(ctx, req)
 	})
 	register(mux, "Delete", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.DeleteRequest{}
+		req := &tlndbpb.DeleteRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.Delete(ctx, req)
 	})
 	register(mux, "BatchPut", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.BatchPutRequest{}
+		req := &tlndbpb.BatchPutRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.BatchPut(ctx, req)
 	})
 	register(mux, "Lookup", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.LookupRequest{}
+		req := &tlndbpb.LookupRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.Lookup(ctx, req)
 	})
 	register(mux, "LookupPrefix", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.LookupPrefixRequest{}
+		req := &tlndbpb.LookupPrefixRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.LookupPrefix(ctx, req)
 	})
 	register(mux, "LookupNumericRange", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.NumericRangeRequest{}
+		req := &tlndbpb.NumericRangeRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.LookupNumericRange(ctx, req)
 	})
 	register(mux, "WindowQuery", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.WindowRequest{}
+		req := &tlndbpb.WindowRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.WindowQuery(ctx, req)
 	})
 	register(mux, "GroupCount", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.GroupRequest{}
+		req := &tlndbpb.GroupRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.GroupCount(ctx, req)
 	})
 	register(mux, "Stats", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.StatsRequest{}
+		req := &tlndbpb.StatsRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.Stats(ctx, req)
 	})
 	register(mux, "LastSeen", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.LastSeenRequest{}
+		req := &tlndbpb.LastSeenRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.LastSeen(ctx, req)
 	})
 	register(mux, "Ancestors", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.AncestorsRequest{}
+		req := &tlndbpb.AncestorsRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
 		return svc.Ancestors(ctx, req)
 	})
 	register(mux, "Descendants", func(ctx context.Context, b []byte) (proto.Message, error) {
-		req := &talondbpb.DescendantsRequest{}
+		req := &tlndbpb.DescendantsRequest{}
 		if err := protojson.Unmarshal(b, req); err != nil {
 			return nil, err
 		}
@@ -377,7 +377,7 @@ func startHTTPServer(addr string, svc *grpcserver.Server, wg *sync.WaitGroup) *h
 	go func() {
 		defer wg.Done()
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("talondb-server: http: %v", err)
+			log.Printf("tlndb-server: http: %v", err)
 		}
 	}()
 	return srv

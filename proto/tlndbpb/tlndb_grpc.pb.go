@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.35.1
-// source: proto/talondb.proto
+// source: proto/tlndb.proto
 
-package talondbpb
+package tlndbpb
 
 import (
 	context "context"
@@ -20,41 +20,41 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TalonDBService_Put_FullMethodName                = "/opentalon.talondb.v1.TalonDBService/Put"
-	TalonDBService_Get_FullMethodName                = "/opentalon.talondb.v1.TalonDBService/Get"
-	TalonDBService_Delete_FullMethodName             = "/opentalon.talondb.v1.TalonDBService/Delete"
-	TalonDBService_BatchPut_FullMethodName           = "/opentalon.talondb.v1.TalonDBService/BatchPut"
-	TalonDBService_Lookup_FullMethodName             = "/opentalon.talondb.v1.TalonDBService/Lookup"
-	TalonDBService_LookupPrefix_FullMethodName       = "/opentalon.talondb.v1.TalonDBService/LookupPrefix"
-	TalonDBService_LookupNumericRange_FullMethodName = "/opentalon.talondb.v1.TalonDBService/LookupNumericRange"
-	TalonDBService_WindowQuery_FullMethodName        = "/opentalon.talondb.v1.TalonDBService/WindowQuery"
-	TalonDBService_GroupCount_FullMethodName         = "/opentalon.talondb.v1.TalonDBService/GroupCount"
-	TalonDBService_Stats_FullMethodName              = "/opentalon.talondb.v1.TalonDBService/Stats"
-	TalonDBService_LastSeen_FullMethodName           = "/opentalon.talondb.v1.TalonDBService/LastSeen"
-	TalonDBService_LastWritten_FullMethodName        = "/opentalon.talondb.v1.TalonDBService/LastWritten"
-	TalonDBService_Ancestors_FullMethodName          = "/opentalon.talondb.v1.TalonDBService/Ancestors"
-	TalonDBService_Descendants_FullMethodName        = "/opentalon.talondb.v1.TalonDBService/Descendants"
-	TalonDBService_Query_FullMethodName              = "/opentalon.talondb.v1.TalonDBService/Query"
-	TalonDBService_QueryAsOf_FullMethodName          = "/opentalon.talondb.v1.TalonDBService/QueryAsOf"
-	TalonDBService_SequenceJoin_FullMethodName       = "/opentalon.talondb.v1.TalonDBService/SequenceJoin"
-	TalonDBService_ClusterQuery_FullMethodName       = "/opentalon.talondb.v1.TalonDBService/ClusterQuery"
-	TalonDBService_VectorInsert_FullMethodName       = "/opentalon.talondb.v1.TalonDBService/VectorInsert"
-	TalonDBService_VectorSearch_FullMethodName       = "/opentalon.talondb.v1.TalonDBService/VectorSearch"
-	TalonDBService_VectorDelete_FullMethodName       = "/opentalon.talondb.v1.TalonDBService/VectorDelete"
-	TalonDBService_VectorDropScope_FullMethodName    = "/opentalon.talondb.v1.TalonDBService/VectorDropScope"
-	TalonDBService_VectorListScopes_FullMethodName   = "/opentalon.talondb.v1.TalonDBService/VectorListScopes"
-	TalonDBService_Subscribe_FullMethodName          = "/opentalon.talondb.v1.TalonDBService/Subscribe"
-	TalonDBService_Replicate_FullMethodName          = "/opentalon.talondb.v1.TalonDBService/Replicate"
-	TalonDBService_Snapshot_FullMethodName           = "/opentalon.talondb.v1.TalonDBService/Snapshot"
-	TalonDBService_Health_FullMethodName             = "/opentalon.talondb.v1.TalonDBService/Health"
+	TlnDBService_Put_FullMethodName                = "/opentalon.tlndb.v1.TlnDBService/Put"
+	TlnDBService_Get_FullMethodName                = "/opentalon.tlndb.v1.TlnDBService/Get"
+	TlnDBService_Delete_FullMethodName             = "/opentalon.tlndb.v1.TlnDBService/Delete"
+	TlnDBService_BatchPut_FullMethodName           = "/opentalon.tlndb.v1.TlnDBService/BatchPut"
+	TlnDBService_Lookup_FullMethodName             = "/opentalon.tlndb.v1.TlnDBService/Lookup"
+	TlnDBService_LookupPrefix_FullMethodName       = "/opentalon.tlndb.v1.TlnDBService/LookupPrefix"
+	TlnDBService_LookupNumericRange_FullMethodName = "/opentalon.tlndb.v1.TlnDBService/LookupNumericRange"
+	TlnDBService_WindowQuery_FullMethodName        = "/opentalon.tlndb.v1.TlnDBService/WindowQuery"
+	TlnDBService_GroupCount_FullMethodName         = "/opentalon.tlndb.v1.TlnDBService/GroupCount"
+	TlnDBService_Stats_FullMethodName              = "/opentalon.tlndb.v1.TlnDBService/Stats"
+	TlnDBService_LastSeen_FullMethodName           = "/opentalon.tlndb.v1.TlnDBService/LastSeen"
+	TlnDBService_LastWritten_FullMethodName        = "/opentalon.tlndb.v1.TlnDBService/LastWritten"
+	TlnDBService_Ancestors_FullMethodName          = "/opentalon.tlndb.v1.TlnDBService/Ancestors"
+	TlnDBService_Descendants_FullMethodName        = "/opentalon.tlndb.v1.TlnDBService/Descendants"
+	TlnDBService_Query_FullMethodName              = "/opentalon.tlndb.v1.TlnDBService/Query"
+	TlnDBService_QueryAsOf_FullMethodName          = "/opentalon.tlndb.v1.TlnDBService/QueryAsOf"
+	TlnDBService_SequenceJoin_FullMethodName       = "/opentalon.tlndb.v1.TlnDBService/SequenceJoin"
+	TlnDBService_ClusterQuery_FullMethodName       = "/opentalon.tlndb.v1.TlnDBService/ClusterQuery"
+	TlnDBService_VectorInsert_FullMethodName       = "/opentalon.tlndb.v1.TlnDBService/VectorInsert"
+	TlnDBService_VectorSearch_FullMethodName       = "/opentalon.tlndb.v1.TlnDBService/VectorSearch"
+	TlnDBService_VectorDelete_FullMethodName       = "/opentalon.tlndb.v1.TlnDBService/VectorDelete"
+	TlnDBService_VectorDropScope_FullMethodName    = "/opentalon.tlndb.v1.TlnDBService/VectorDropScope"
+	TlnDBService_VectorListScopes_FullMethodName   = "/opentalon.tlndb.v1.TlnDBService/VectorListScopes"
+	TlnDBService_Subscribe_FullMethodName          = "/opentalon.tlndb.v1.TlnDBService/Subscribe"
+	TlnDBService_Replicate_FullMethodName          = "/opentalon.tlndb.v1.TlnDBService/Replicate"
+	TlnDBService_Snapshot_FullMethodName           = "/opentalon.tlndb.v1.TlnDBService/Snapshot"
+	TlnDBService_Health_FullMethodName             = "/opentalon.tlndb.v1.TlnDBService/Health"
 )
 
-// TalonDBServiceClient is the client API for TalonDBService service.
+// TlnDBServiceClient is the client API for TlnDBService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// TalonDBService is the wire surface exposed by `talondb-server`. The
-// gRPC service maps 1:1 to the talondb.IndexedStore Go interface.
+// TlnDBService is the wire surface exposed by `tlndb-server`. The
+// gRPC service maps 1:1 to the tlndb.IndexedStore Go interface.
 //
 // Two transports speak this schema:
 //   - gRPC, the primary protocol (Unix socket default, TCP optional).
@@ -62,7 +62,7 @@ const (
 //     curl-based debugging and non-Go clients. The HTTP paths follow
 //     the Postgres-flavoured convention of operation-as-path, request
 //     body as JSON.
-type TalonDBServiceClient interface {
+type TlnDBServiceClient interface {
 	// DocumentStore surface (entityID, docID) → bytes
 	Put(ctx context.Context, in *PutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
@@ -85,7 +85,7 @@ type TalonDBServiceClient interface {
 	// Query is the server-side composer for structured queries: anchor
 	// narrowing via the inverted index + per-doc clause evaluation. Lets
 	// non-Go clients run a multi-clause query in one round-trip instead
-	// of replicating the talon-language adapter's composition logic.
+	// of replicating the tln-language adapter's composition logic.
 	// Supported clauses: Pattern, Predicate, Or, Not, FullText.
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
 	// QueryAsOf runs the same structured composer as Query but against a
@@ -107,7 +107,7 @@ type TalonDBServiceClient interface {
 	// within W" detect blocks.
 	ClusterQuery(ctx context.Context, in *ClusterQueryRequest, opts ...grpc.CallOption) (*ClusterQueryResponse, error)
 	// Vector index — per-scope HNSW with dimension locked on first
-	// insert. talon-db hosts one logical index per (entity, scope), so a
+	// insert. tln-db hosts one logical index per (entity, scope), so a
 	// single tenant can hold multiple embedding models with different
 	// dimensions side-by-side without cross-contamination.
 	VectorInsert(ctx context.Context, in *VectorInsertRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -131,247 +131,247 @@ type TalonDBServiceClient interface {
 	Health(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*HealthResponse, error)
 }
 
-type talonDBServiceClient struct {
+type tlnDBServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewTalonDBServiceClient(cc grpc.ClientConnInterface) TalonDBServiceClient {
-	return &talonDBServiceClient{cc}
+func NewTlnDBServiceClient(cc grpc.ClientConnInterface) TlnDBServiceClient {
+	return &tlnDBServiceClient{cc}
 }
 
-func (c *talonDBServiceClient) Put(ctx context.Context, in *PutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *tlnDBServiceClient) Put(ctx context.Context, in *PutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, TalonDBService_Put_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_Put_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error) {
+func (c *tlnDBServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_Get_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_Get_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *tlnDBServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, TalonDBService_Delete_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_Delete_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) BatchPut(ctx context.Context, in *BatchPutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *tlnDBServiceClient) BatchPut(ctx context.Context, in *BatchPutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, TalonDBService_BatchPut_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_BatchPut_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) Lookup(ctx context.Context, in *LookupRequest, opts ...grpc.CallOption) (*DocIDList, error) {
+func (c *tlnDBServiceClient) Lookup(ctx context.Context, in *LookupRequest, opts ...grpc.CallOption) (*DocIDList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DocIDList)
-	err := c.cc.Invoke(ctx, TalonDBService_Lookup_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_Lookup_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) LookupPrefix(ctx context.Context, in *LookupPrefixRequest, opts ...grpc.CallOption) (*DocIDList, error) {
+func (c *tlnDBServiceClient) LookupPrefix(ctx context.Context, in *LookupPrefixRequest, opts ...grpc.CallOption) (*DocIDList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DocIDList)
-	err := c.cc.Invoke(ctx, TalonDBService_LookupPrefix_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_LookupPrefix_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) LookupNumericRange(ctx context.Context, in *NumericRangeRequest, opts ...grpc.CallOption) (*DocIDList, error) {
+func (c *tlnDBServiceClient) LookupNumericRange(ctx context.Context, in *NumericRangeRequest, opts ...grpc.CallOption) (*DocIDList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DocIDList)
-	err := c.cc.Invoke(ctx, TalonDBService_LookupNumericRange_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_LookupNumericRange_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) WindowQuery(ctx context.Context, in *WindowRequest, opts ...grpc.CallOption) (*WindowResponse, error) {
+func (c *tlnDBServiceClient) WindowQuery(ctx context.Context, in *WindowRequest, opts ...grpc.CallOption) (*WindowResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WindowResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_WindowQuery_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_WindowQuery_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) GroupCount(ctx context.Context, in *GroupRequest, opts ...grpc.CallOption) (*GroupResponse, error) {
+func (c *tlnDBServiceClient) GroupCount(ctx context.Context, in *GroupRequest, opts ...grpc.CallOption) (*GroupResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GroupResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_GroupCount_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_GroupCount_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) Stats(ctx context.Context, in *StatsRequest, opts ...grpc.CallOption) (*StatsResponse, error) {
+func (c *tlnDBServiceClient) Stats(ctx context.Context, in *StatsRequest, opts ...grpc.CallOption) (*StatsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(StatsResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_Stats_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_Stats_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) LastSeen(ctx context.Context, in *LastSeenRequest, opts ...grpc.CallOption) (*LastSeenResponse, error) {
+func (c *tlnDBServiceClient) LastSeen(ctx context.Context, in *LastSeenRequest, opts ...grpc.CallOption) (*LastSeenResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LastSeenResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_LastSeen_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_LastSeen_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) LastWritten(ctx context.Context, in *LastWrittenRequest, opts ...grpc.CallOption) (*LastWrittenResponse, error) {
+func (c *tlnDBServiceClient) LastWritten(ctx context.Context, in *LastWrittenRequest, opts ...grpc.CallOption) (*LastWrittenResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LastWrittenResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_LastWritten_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_LastWritten_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) Ancestors(ctx context.Context, in *AncestorsRequest, opts ...grpc.CallOption) (*StringList, error) {
+func (c *tlnDBServiceClient) Ancestors(ctx context.Context, in *AncestorsRequest, opts ...grpc.CallOption) (*StringList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(StringList)
-	err := c.cc.Invoke(ctx, TalonDBService_Ancestors_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_Ancestors_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) Descendants(ctx context.Context, in *DescendantsRequest, opts ...grpc.CallOption) (*DocIDList, error) {
+func (c *tlnDBServiceClient) Descendants(ctx context.Context, in *DescendantsRequest, opts ...grpc.CallOption) (*DocIDList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DocIDList)
-	err := c.cc.Invoke(ctx, TalonDBService_Descendants_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_Descendants_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error) {
+func (c *tlnDBServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(QueryResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_Query_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_Query_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) QueryAsOf(ctx context.Context, in *QueryAsOfRequest, opts ...grpc.CallOption) (*QueryResponse, error) {
+func (c *tlnDBServiceClient) QueryAsOf(ctx context.Context, in *QueryAsOfRequest, opts ...grpc.CallOption) (*QueryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(QueryResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_QueryAsOf_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_QueryAsOf_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) SequenceJoin(ctx context.Context, in *SequenceJoinRequest, opts ...grpc.CallOption) (*SequenceJoinResponse, error) {
+func (c *tlnDBServiceClient) SequenceJoin(ctx context.Context, in *SequenceJoinRequest, opts ...grpc.CallOption) (*SequenceJoinResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SequenceJoinResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_SequenceJoin_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_SequenceJoin_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) ClusterQuery(ctx context.Context, in *ClusterQueryRequest, opts ...grpc.CallOption) (*ClusterQueryResponse, error) {
+func (c *tlnDBServiceClient) ClusterQuery(ctx context.Context, in *ClusterQueryRequest, opts ...grpc.CallOption) (*ClusterQueryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ClusterQueryResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_ClusterQuery_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_ClusterQuery_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) VectorInsert(ctx context.Context, in *VectorInsertRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *tlnDBServiceClient) VectorInsert(ctx context.Context, in *VectorInsertRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, TalonDBService_VectorInsert_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_VectorInsert_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) VectorSearch(ctx context.Context, in *VectorSearchRequest, opts ...grpc.CallOption) (*VectorSearchResponse, error) {
+func (c *tlnDBServiceClient) VectorSearch(ctx context.Context, in *VectorSearchRequest, opts ...grpc.CallOption) (*VectorSearchResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VectorSearchResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_VectorSearch_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_VectorSearch_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) VectorDelete(ctx context.Context, in *VectorDeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *tlnDBServiceClient) VectorDelete(ctx context.Context, in *VectorDeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, TalonDBService_VectorDelete_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_VectorDelete_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) VectorDropScope(ctx context.Context, in *VectorDropScopeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *tlnDBServiceClient) VectorDropScope(ctx context.Context, in *VectorDropScopeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, TalonDBService_VectorDropScope_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_VectorDropScope_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) VectorListScopes(ctx context.Context, in *VectorListScopesRequest, opts ...grpc.CallOption) (*VectorListScopesResponse, error) {
+func (c *tlnDBServiceClient) VectorListScopes(ctx context.Context, in *VectorListScopesRequest, opts ...grpc.CallOption) (*VectorListScopesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VectorListScopesResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_VectorListScopes_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_VectorListScopes_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *talonDBServiceClient) Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MutationEvent], error) {
+func (c *tlnDBServiceClient) Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MutationEvent], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &TalonDBService_ServiceDesc.Streams[0], TalonDBService_Subscribe_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &TlnDBService_ServiceDesc.Streams[0], TlnDBService_Subscribe_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -386,11 +386,11 @@ func (c *talonDBServiceClient) Subscribe(ctx context.Context, in *SubscribeReque
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type TalonDBService_SubscribeClient = grpc.ServerStreamingClient[MutationEvent]
+type TlnDBService_SubscribeClient = grpc.ServerStreamingClient[MutationEvent]
 
-func (c *talonDBServiceClient) Replicate(ctx context.Context, in *ReplicateRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[OpLogEntry], error) {
+func (c *tlnDBServiceClient) Replicate(ctx context.Context, in *ReplicateRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[OpLogEntry], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &TalonDBService_ServiceDesc.Streams[1], TalonDBService_Replicate_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &TlnDBService_ServiceDesc.Streams[1], TlnDBService_Replicate_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -405,11 +405,11 @@ func (c *talonDBServiceClient) Replicate(ctx context.Context, in *ReplicateReque
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type TalonDBService_ReplicateClient = grpc.ServerStreamingClient[OpLogEntry]
+type TlnDBService_ReplicateClient = grpc.ServerStreamingClient[OpLogEntry]
 
-func (c *talonDBServiceClient) Snapshot(ctx context.Context, in *SnapshotRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SnapshotChunk], error) {
+func (c *tlnDBServiceClient) Snapshot(ctx context.Context, in *SnapshotRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SnapshotChunk], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &TalonDBService_ServiceDesc.Streams[2], TalonDBService_Snapshot_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &TlnDBService_ServiceDesc.Streams[2], TlnDBService_Snapshot_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -424,24 +424,24 @@ func (c *talonDBServiceClient) Snapshot(ctx context.Context, in *SnapshotRequest
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type TalonDBService_SnapshotClient = grpc.ServerStreamingClient[SnapshotChunk]
+type TlnDBService_SnapshotClient = grpc.ServerStreamingClient[SnapshotChunk]
 
-func (c *talonDBServiceClient) Health(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*HealthResponse, error) {
+func (c *tlnDBServiceClient) Health(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*HealthResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HealthResponse)
-	err := c.cc.Invoke(ctx, TalonDBService_Health_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TlnDBService_Health_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// TalonDBServiceServer is the server API for TalonDBService service.
-// All implementations must embed UnimplementedTalonDBServiceServer
+// TlnDBServiceServer is the server API for TlnDBService service.
+// All implementations must embed UnimplementedTlnDBServiceServer
 // for forward compatibility.
 //
-// TalonDBService is the wire surface exposed by `talondb-server`. The
-// gRPC service maps 1:1 to the talondb.IndexedStore Go interface.
+// TlnDBService is the wire surface exposed by `tlndb-server`. The
+// gRPC service maps 1:1 to the tlndb.IndexedStore Go interface.
 //
 // Two transports speak this schema:
 //   - gRPC, the primary protocol (Unix socket default, TCP optional).
@@ -449,7 +449,7 @@ func (c *talonDBServiceClient) Health(ctx context.Context, in *emptypb.Empty, op
 //     curl-based debugging and non-Go clients. The HTTP paths follow
 //     the Postgres-flavoured convention of operation-as-path, request
 //     body as JSON.
-type TalonDBServiceServer interface {
+type TlnDBServiceServer interface {
 	// DocumentStore surface (entityID, docID) → bytes
 	Put(context.Context, *PutRequest) (*emptypb.Empty, error)
 	Get(context.Context, *GetRequest) (*GetResponse, error)
@@ -472,7 +472,7 @@ type TalonDBServiceServer interface {
 	// Query is the server-side composer for structured queries: anchor
 	// narrowing via the inverted index + per-doc clause evaluation. Lets
 	// non-Go clients run a multi-clause query in one round-trip instead
-	// of replicating the talon-language adapter's composition logic.
+	// of replicating the tln-language adapter's composition logic.
 	// Supported clauses: Pattern, Predicate, Or, Not, FullText.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
 	// QueryAsOf runs the same structured composer as Query but against a
@@ -494,7 +494,7 @@ type TalonDBServiceServer interface {
 	// within W" detect blocks.
 	ClusterQuery(context.Context, *ClusterQueryRequest) (*ClusterQueryResponse, error)
 	// Vector index — per-scope HNSW with dimension locked on first
-	// insert. talon-db hosts one logical index per (entity, scope), so a
+	// insert. tln-db hosts one logical index per (entity, scope), so a
 	// single tenant can hold multiple embedding models with different
 	// dimensions side-by-side without cross-contamination.
 	VectorInsert(context.Context, *VectorInsertRequest) (*emptypb.Empty, error)
@@ -516,703 +516,703 @@ type TalonDBServiceServer interface {
 	Snapshot(*SnapshotRequest, grpc.ServerStreamingServer[SnapshotChunk]) error
 	// Operational
 	Health(context.Context, *emptypb.Empty) (*HealthResponse, error)
-	mustEmbedUnimplementedTalonDBServiceServer()
+	mustEmbedUnimplementedTlnDBServiceServer()
 }
 
-// UnimplementedTalonDBServiceServer must be embedded to have
+// UnimplementedTlnDBServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedTalonDBServiceServer struct{}
+type UnimplementedTlnDBServiceServer struct{}
 
-func (UnimplementedTalonDBServiceServer) Put(context.Context, *PutRequest) (*emptypb.Empty, error) {
+func (UnimplementedTlnDBServiceServer) Put(context.Context, *PutRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method Put not implemented")
 }
-func (UnimplementedTalonDBServiceServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
+func (UnimplementedTlnDBServiceServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedTalonDBServiceServer) Delete(context.Context, *DeleteRequest) (*emptypb.Empty, error) {
+func (UnimplementedTlnDBServiceServer) Delete(context.Context, *DeleteRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedTalonDBServiceServer) BatchPut(context.Context, *BatchPutRequest) (*emptypb.Empty, error) {
+func (UnimplementedTlnDBServiceServer) BatchPut(context.Context, *BatchPutRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method BatchPut not implemented")
 }
-func (UnimplementedTalonDBServiceServer) Lookup(context.Context, *LookupRequest) (*DocIDList, error) {
+func (UnimplementedTlnDBServiceServer) Lookup(context.Context, *LookupRequest) (*DocIDList, error) {
 	return nil, status.Error(codes.Unimplemented, "method Lookup not implemented")
 }
-func (UnimplementedTalonDBServiceServer) LookupPrefix(context.Context, *LookupPrefixRequest) (*DocIDList, error) {
+func (UnimplementedTlnDBServiceServer) LookupPrefix(context.Context, *LookupPrefixRequest) (*DocIDList, error) {
 	return nil, status.Error(codes.Unimplemented, "method LookupPrefix not implemented")
 }
-func (UnimplementedTalonDBServiceServer) LookupNumericRange(context.Context, *NumericRangeRequest) (*DocIDList, error) {
+func (UnimplementedTlnDBServiceServer) LookupNumericRange(context.Context, *NumericRangeRequest) (*DocIDList, error) {
 	return nil, status.Error(codes.Unimplemented, "method LookupNumericRange not implemented")
 }
-func (UnimplementedTalonDBServiceServer) WindowQuery(context.Context, *WindowRequest) (*WindowResponse, error) {
+func (UnimplementedTlnDBServiceServer) WindowQuery(context.Context, *WindowRequest) (*WindowResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method WindowQuery not implemented")
 }
-func (UnimplementedTalonDBServiceServer) GroupCount(context.Context, *GroupRequest) (*GroupResponse, error) {
+func (UnimplementedTlnDBServiceServer) GroupCount(context.Context, *GroupRequest) (*GroupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GroupCount not implemented")
 }
-func (UnimplementedTalonDBServiceServer) Stats(context.Context, *StatsRequest) (*StatsResponse, error) {
+func (UnimplementedTlnDBServiceServer) Stats(context.Context, *StatsRequest) (*StatsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Stats not implemented")
 }
-func (UnimplementedTalonDBServiceServer) LastSeen(context.Context, *LastSeenRequest) (*LastSeenResponse, error) {
+func (UnimplementedTlnDBServiceServer) LastSeen(context.Context, *LastSeenRequest) (*LastSeenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method LastSeen not implemented")
 }
-func (UnimplementedTalonDBServiceServer) LastWritten(context.Context, *LastWrittenRequest) (*LastWrittenResponse, error) {
+func (UnimplementedTlnDBServiceServer) LastWritten(context.Context, *LastWrittenRequest) (*LastWrittenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method LastWritten not implemented")
 }
-func (UnimplementedTalonDBServiceServer) Ancestors(context.Context, *AncestorsRequest) (*StringList, error) {
+func (UnimplementedTlnDBServiceServer) Ancestors(context.Context, *AncestorsRequest) (*StringList, error) {
 	return nil, status.Error(codes.Unimplemented, "method Ancestors not implemented")
 }
-func (UnimplementedTalonDBServiceServer) Descendants(context.Context, *DescendantsRequest) (*DocIDList, error) {
+func (UnimplementedTlnDBServiceServer) Descendants(context.Context, *DescendantsRequest) (*DocIDList, error) {
 	return nil, status.Error(codes.Unimplemented, "method Descendants not implemented")
 }
-func (UnimplementedTalonDBServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
+func (UnimplementedTlnDBServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Query not implemented")
 }
-func (UnimplementedTalonDBServiceServer) QueryAsOf(context.Context, *QueryAsOfRequest) (*QueryResponse, error) {
+func (UnimplementedTlnDBServiceServer) QueryAsOf(context.Context, *QueryAsOfRequest) (*QueryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method QueryAsOf not implemented")
 }
-func (UnimplementedTalonDBServiceServer) SequenceJoin(context.Context, *SequenceJoinRequest) (*SequenceJoinResponse, error) {
+func (UnimplementedTlnDBServiceServer) SequenceJoin(context.Context, *SequenceJoinRequest) (*SequenceJoinResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SequenceJoin not implemented")
 }
-func (UnimplementedTalonDBServiceServer) ClusterQuery(context.Context, *ClusterQueryRequest) (*ClusterQueryResponse, error) {
+func (UnimplementedTlnDBServiceServer) ClusterQuery(context.Context, *ClusterQueryRequest) (*ClusterQueryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ClusterQuery not implemented")
 }
-func (UnimplementedTalonDBServiceServer) VectorInsert(context.Context, *VectorInsertRequest) (*emptypb.Empty, error) {
+func (UnimplementedTlnDBServiceServer) VectorInsert(context.Context, *VectorInsertRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method VectorInsert not implemented")
 }
-func (UnimplementedTalonDBServiceServer) VectorSearch(context.Context, *VectorSearchRequest) (*VectorSearchResponse, error) {
+func (UnimplementedTlnDBServiceServer) VectorSearch(context.Context, *VectorSearchRequest) (*VectorSearchResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method VectorSearch not implemented")
 }
-func (UnimplementedTalonDBServiceServer) VectorDelete(context.Context, *VectorDeleteRequest) (*emptypb.Empty, error) {
+func (UnimplementedTlnDBServiceServer) VectorDelete(context.Context, *VectorDeleteRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method VectorDelete not implemented")
 }
-func (UnimplementedTalonDBServiceServer) VectorDropScope(context.Context, *VectorDropScopeRequest) (*emptypb.Empty, error) {
+func (UnimplementedTlnDBServiceServer) VectorDropScope(context.Context, *VectorDropScopeRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method VectorDropScope not implemented")
 }
-func (UnimplementedTalonDBServiceServer) VectorListScopes(context.Context, *VectorListScopesRequest) (*VectorListScopesResponse, error) {
+func (UnimplementedTlnDBServiceServer) VectorListScopes(context.Context, *VectorListScopesRequest) (*VectorListScopesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method VectorListScopes not implemented")
 }
-func (UnimplementedTalonDBServiceServer) Subscribe(*SubscribeRequest, grpc.ServerStreamingServer[MutationEvent]) error {
+func (UnimplementedTlnDBServiceServer) Subscribe(*SubscribeRequest, grpc.ServerStreamingServer[MutationEvent]) error {
 	return status.Error(codes.Unimplemented, "method Subscribe not implemented")
 }
-func (UnimplementedTalonDBServiceServer) Replicate(*ReplicateRequest, grpc.ServerStreamingServer[OpLogEntry]) error {
+func (UnimplementedTlnDBServiceServer) Replicate(*ReplicateRequest, grpc.ServerStreamingServer[OpLogEntry]) error {
 	return status.Error(codes.Unimplemented, "method Replicate not implemented")
 }
-func (UnimplementedTalonDBServiceServer) Snapshot(*SnapshotRequest, grpc.ServerStreamingServer[SnapshotChunk]) error {
+func (UnimplementedTlnDBServiceServer) Snapshot(*SnapshotRequest, grpc.ServerStreamingServer[SnapshotChunk]) error {
 	return status.Error(codes.Unimplemented, "method Snapshot not implemented")
 }
-func (UnimplementedTalonDBServiceServer) Health(context.Context, *emptypb.Empty) (*HealthResponse, error) {
+func (UnimplementedTlnDBServiceServer) Health(context.Context, *emptypb.Empty) (*HealthResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Health not implemented")
 }
-func (UnimplementedTalonDBServiceServer) mustEmbedUnimplementedTalonDBServiceServer() {}
-func (UnimplementedTalonDBServiceServer) testEmbeddedByValue()                        {}
+func (UnimplementedTlnDBServiceServer) mustEmbedUnimplementedTlnDBServiceServer() {}
+func (UnimplementedTlnDBServiceServer) testEmbeddedByValue()                      {}
 
-// UnsafeTalonDBServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to TalonDBServiceServer will
+// UnsafeTlnDBServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TlnDBServiceServer will
 // result in compilation errors.
-type UnsafeTalonDBServiceServer interface {
-	mustEmbedUnimplementedTalonDBServiceServer()
+type UnsafeTlnDBServiceServer interface {
+	mustEmbedUnimplementedTlnDBServiceServer()
 }
 
-func RegisterTalonDBServiceServer(s grpc.ServiceRegistrar, srv TalonDBServiceServer) {
-	// If the following call panics, it indicates UnimplementedTalonDBServiceServer was
+func RegisterTlnDBServiceServer(s grpc.ServiceRegistrar, srv TlnDBServiceServer) {
+	// If the following call panics, it indicates UnimplementedTlnDBServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&TalonDBService_ServiceDesc, srv)
+	s.RegisterService(&TlnDBService_ServiceDesc, srv)
 }
 
-func _TalonDBService_Put_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_Put_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PutRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).Put(ctx, in)
+		return srv.(TlnDBServiceServer).Put(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_Put_FullMethodName,
+		FullMethod: TlnDBService_Put_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).Put(ctx, req.(*PutRequest))
+		return srv.(TlnDBServiceServer).Put(ctx, req.(*PutRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).Get(ctx, in)
+		return srv.(TlnDBServiceServer).Get(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_Get_FullMethodName,
+		FullMethod: TlnDBService_Get_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).Get(ctx, req.(*GetRequest))
+		return srv.(TlnDBServiceServer).Get(ctx, req.(*GetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).Delete(ctx, in)
+		return srv.(TlnDBServiceServer).Delete(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_Delete_FullMethodName,
+		FullMethod: TlnDBService_Delete_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).Delete(ctx, req.(*DeleteRequest))
+		return srv.(TlnDBServiceServer).Delete(ctx, req.(*DeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_BatchPut_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_BatchPut_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BatchPutRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).BatchPut(ctx, in)
+		return srv.(TlnDBServiceServer).BatchPut(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_BatchPut_FullMethodName,
+		FullMethod: TlnDBService_BatchPut_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).BatchPut(ctx, req.(*BatchPutRequest))
+		return srv.(TlnDBServiceServer).BatchPut(ctx, req.(*BatchPutRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_Lookup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_Lookup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LookupRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).Lookup(ctx, in)
+		return srv.(TlnDBServiceServer).Lookup(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_Lookup_FullMethodName,
+		FullMethod: TlnDBService_Lookup_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).Lookup(ctx, req.(*LookupRequest))
+		return srv.(TlnDBServiceServer).Lookup(ctx, req.(*LookupRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_LookupPrefix_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_LookupPrefix_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LookupPrefixRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).LookupPrefix(ctx, in)
+		return srv.(TlnDBServiceServer).LookupPrefix(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_LookupPrefix_FullMethodName,
+		FullMethod: TlnDBService_LookupPrefix_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).LookupPrefix(ctx, req.(*LookupPrefixRequest))
+		return srv.(TlnDBServiceServer).LookupPrefix(ctx, req.(*LookupPrefixRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_LookupNumericRange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_LookupNumericRange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NumericRangeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).LookupNumericRange(ctx, in)
+		return srv.(TlnDBServiceServer).LookupNumericRange(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_LookupNumericRange_FullMethodName,
+		FullMethod: TlnDBService_LookupNumericRange_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).LookupNumericRange(ctx, req.(*NumericRangeRequest))
+		return srv.(TlnDBServiceServer).LookupNumericRange(ctx, req.(*NumericRangeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_WindowQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_WindowQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WindowRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).WindowQuery(ctx, in)
+		return srv.(TlnDBServiceServer).WindowQuery(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_WindowQuery_FullMethodName,
+		FullMethod: TlnDBService_WindowQuery_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).WindowQuery(ctx, req.(*WindowRequest))
+		return srv.(TlnDBServiceServer).WindowQuery(ctx, req.(*WindowRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_GroupCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_GroupCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GroupRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).GroupCount(ctx, in)
+		return srv.(TlnDBServiceServer).GroupCount(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_GroupCount_FullMethodName,
+		FullMethod: TlnDBService_GroupCount_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).GroupCount(ctx, req.(*GroupRequest))
+		return srv.(TlnDBServiceServer).GroupCount(ctx, req.(*GroupRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_Stats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_Stats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(StatsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).Stats(ctx, in)
+		return srv.(TlnDBServiceServer).Stats(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_Stats_FullMethodName,
+		FullMethod: TlnDBService_Stats_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).Stats(ctx, req.(*StatsRequest))
+		return srv.(TlnDBServiceServer).Stats(ctx, req.(*StatsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_LastSeen_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_LastSeen_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LastSeenRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).LastSeen(ctx, in)
+		return srv.(TlnDBServiceServer).LastSeen(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_LastSeen_FullMethodName,
+		FullMethod: TlnDBService_LastSeen_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).LastSeen(ctx, req.(*LastSeenRequest))
+		return srv.(TlnDBServiceServer).LastSeen(ctx, req.(*LastSeenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_LastWritten_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_LastWritten_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LastWrittenRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).LastWritten(ctx, in)
+		return srv.(TlnDBServiceServer).LastWritten(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_LastWritten_FullMethodName,
+		FullMethod: TlnDBService_LastWritten_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).LastWritten(ctx, req.(*LastWrittenRequest))
+		return srv.(TlnDBServiceServer).LastWritten(ctx, req.(*LastWrittenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_Ancestors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_Ancestors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AncestorsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).Ancestors(ctx, in)
+		return srv.(TlnDBServiceServer).Ancestors(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_Ancestors_FullMethodName,
+		FullMethod: TlnDBService_Ancestors_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).Ancestors(ctx, req.(*AncestorsRequest))
+		return srv.(TlnDBServiceServer).Ancestors(ctx, req.(*AncestorsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_Descendants_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_Descendants_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DescendantsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).Descendants(ctx, in)
+		return srv.(TlnDBServiceServer).Descendants(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_Descendants_FullMethodName,
+		FullMethod: TlnDBService_Descendants_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).Descendants(ctx, req.(*DescendantsRequest))
+		return srv.(TlnDBServiceServer).Descendants(ctx, req.(*DescendantsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).Query(ctx, in)
+		return srv.(TlnDBServiceServer).Query(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_Query_FullMethodName,
+		FullMethod: TlnDBService_Query_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).Query(ctx, req.(*QueryRequest))
+		return srv.(TlnDBServiceServer).Query(ctx, req.(*QueryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_QueryAsOf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_QueryAsOf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryAsOfRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).QueryAsOf(ctx, in)
+		return srv.(TlnDBServiceServer).QueryAsOf(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_QueryAsOf_FullMethodName,
+		FullMethod: TlnDBService_QueryAsOf_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).QueryAsOf(ctx, req.(*QueryAsOfRequest))
+		return srv.(TlnDBServiceServer).QueryAsOf(ctx, req.(*QueryAsOfRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_SequenceJoin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_SequenceJoin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SequenceJoinRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).SequenceJoin(ctx, in)
+		return srv.(TlnDBServiceServer).SequenceJoin(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_SequenceJoin_FullMethodName,
+		FullMethod: TlnDBService_SequenceJoin_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).SequenceJoin(ctx, req.(*SequenceJoinRequest))
+		return srv.(TlnDBServiceServer).SequenceJoin(ctx, req.(*SequenceJoinRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_ClusterQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_ClusterQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ClusterQueryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).ClusterQuery(ctx, in)
+		return srv.(TlnDBServiceServer).ClusterQuery(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_ClusterQuery_FullMethodName,
+		FullMethod: TlnDBService_ClusterQuery_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).ClusterQuery(ctx, req.(*ClusterQueryRequest))
+		return srv.(TlnDBServiceServer).ClusterQuery(ctx, req.(*ClusterQueryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_VectorInsert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_VectorInsert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VectorInsertRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).VectorInsert(ctx, in)
+		return srv.(TlnDBServiceServer).VectorInsert(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_VectorInsert_FullMethodName,
+		FullMethod: TlnDBService_VectorInsert_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).VectorInsert(ctx, req.(*VectorInsertRequest))
+		return srv.(TlnDBServiceServer).VectorInsert(ctx, req.(*VectorInsertRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_VectorSearch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_VectorSearch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VectorSearchRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).VectorSearch(ctx, in)
+		return srv.(TlnDBServiceServer).VectorSearch(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_VectorSearch_FullMethodName,
+		FullMethod: TlnDBService_VectorSearch_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).VectorSearch(ctx, req.(*VectorSearchRequest))
+		return srv.(TlnDBServiceServer).VectorSearch(ctx, req.(*VectorSearchRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_VectorDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_VectorDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VectorDeleteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).VectorDelete(ctx, in)
+		return srv.(TlnDBServiceServer).VectorDelete(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_VectorDelete_FullMethodName,
+		FullMethod: TlnDBService_VectorDelete_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).VectorDelete(ctx, req.(*VectorDeleteRequest))
+		return srv.(TlnDBServiceServer).VectorDelete(ctx, req.(*VectorDeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_VectorDropScope_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_VectorDropScope_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VectorDropScopeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).VectorDropScope(ctx, in)
+		return srv.(TlnDBServiceServer).VectorDropScope(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_VectorDropScope_FullMethodName,
+		FullMethod: TlnDBService_VectorDropScope_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).VectorDropScope(ctx, req.(*VectorDropScopeRequest))
+		return srv.(TlnDBServiceServer).VectorDropScope(ctx, req.(*VectorDropScopeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_VectorListScopes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_VectorListScopes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VectorListScopesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).VectorListScopes(ctx, in)
+		return srv.(TlnDBServiceServer).VectorListScopes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_VectorListScopes_FullMethodName,
+		FullMethod: TlnDBService_VectorListScopes_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).VectorListScopes(ctx, req.(*VectorListScopesRequest))
+		return srv.(TlnDBServiceServer).VectorListScopes(ctx, req.(*VectorListScopesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TalonDBService_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _TlnDBService_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SubscribeRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(TalonDBServiceServer).Subscribe(m, &grpc.GenericServerStream[SubscribeRequest, MutationEvent]{ServerStream: stream})
+	return srv.(TlnDBServiceServer).Subscribe(m, &grpc.GenericServerStream[SubscribeRequest, MutationEvent]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type TalonDBService_SubscribeServer = grpc.ServerStreamingServer[MutationEvent]
+type TlnDBService_SubscribeServer = grpc.ServerStreamingServer[MutationEvent]
 
-func _TalonDBService_Replicate_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _TlnDBService_Replicate_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(ReplicateRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(TalonDBServiceServer).Replicate(m, &grpc.GenericServerStream[ReplicateRequest, OpLogEntry]{ServerStream: stream})
+	return srv.(TlnDBServiceServer).Replicate(m, &grpc.GenericServerStream[ReplicateRequest, OpLogEntry]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type TalonDBService_ReplicateServer = grpc.ServerStreamingServer[OpLogEntry]
+type TlnDBService_ReplicateServer = grpc.ServerStreamingServer[OpLogEntry]
 
-func _TalonDBService_Snapshot_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _TlnDBService_Snapshot_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SnapshotRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(TalonDBServiceServer).Snapshot(m, &grpc.GenericServerStream[SnapshotRequest, SnapshotChunk]{ServerStream: stream})
+	return srv.(TlnDBServiceServer).Snapshot(m, &grpc.GenericServerStream[SnapshotRequest, SnapshotChunk]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type TalonDBService_SnapshotServer = grpc.ServerStreamingServer[SnapshotChunk]
+type TlnDBService_SnapshotServer = grpc.ServerStreamingServer[SnapshotChunk]
 
-func _TalonDBService_Health_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TlnDBService_Health_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TalonDBServiceServer).Health(ctx, in)
+		return srv.(TlnDBServiceServer).Health(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TalonDBService_Health_FullMethodName,
+		FullMethod: TlnDBService_Health_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TalonDBServiceServer).Health(ctx, req.(*emptypb.Empty))
+		return srv.(TlnDBServiceServer).Health(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// TalonDBService_ServiceDesc is the grpc.ServiceDesc for TalonDBService service.
+// TlnDBService_ServiceDesc is the grpc.ServiceDesc for TlnDBService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var TalonDBService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "opentalon.talondb.v1.TalonDBService",
-	HandlerType: (*TalonDBServiceServer)(nil),
+var TlnDBService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "opentalon.tlndb.v1.TlnDBService",
+	HandlerType: (*TlnDBServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Put",
-			Handler:    _TalonDBService_Put_Handler,
+			Handler:    _TlnDBService_Put_Handler,
 		},
 		{
 			MethodName: "Get",
-			Handler:    _TalonDBService_Get_Handler,
+			Handler:    _TlnDBService_Get_Handler,
 		},
 		{
 			MethodName: "Delete",
-			Handler:    _TalonDBService_Delete_Handler,
+			Handler:    _TlnDBService_Delete_Handler,
 		},
 		{
 			MethodName: "BatchPut",
-			Handler:    _TalonDBService_BatchPut_Handler,
+			Handler:    _TlnDBService_BatchPut_Handler,
 		},
 		{
 			MethodName: "Lookup",
-			Handler:    _TalonDBService_Lookup_Handler,
+			Handler:    _TlnDBService_Lookup_Handler,
 		},
 		{
 			MethodName: "LookupPrefix",
-			Handler:    _TalonDBService_LookupPrefix_Handler,
+			Handler:    _TlnDBService_LookupPrefix_Handler,
 		},
 		{
 			MethodName: "LookupNumericRange",
-			Handler:    _TalonDBService_LookupNumericRange_Handler,
+			Handler:    _TlnDBService_LookupNumericRange_Handler,
 		},
 		{
 			MethodName: "WindowQuery",
-			Handler:    _TalonDBService_WindowQuery_Handler,
+			Handler:    _TlnDBService_WindowQuery_Handler,
 		},
 		{
 			MethodName: "GroupCount",
-			Handler:    _TalonDBService_GroupCount_Handler,
+			Handler:    _TlnDBService_GroupCount_Handler,
 		},
 		{
 			MethodName: "Stats",
-			Handler:    _TalonDBService_Stats_Handler,
+			Handler:    _TlnDBService_Stats_Handler,
 		},
 		{
 			MethodName: "LastSeen",
-			Handler:    _TalonDBService_LastSeen_Handler,
+			Handler:    _TlnDBService_LastSeen_Handler,
 		},
 		{
 			MethodName: "LastWritten",
-			Handler:    _TalonDBService_LastWritten_Handler,
+			Handler:    _TlnDBService_LastWritten_Handler,
 		},
 		{
 			MethodName: "Ancestors",
-			Handler:    _TalonDBService_Ancestors_Handler,
+			Handler:    _TlnDBService_Ancestors_Handler,
 		},
 		{
 			MethodName: "Descendants",
-			Handler:    _TalonDBService_Descendants_Handler,
+			Handler:    _TlnDBService_Descendants_Handler,
 		},
 		{
 			MethodName: "Query",
-			Handler:    _TalonDBService_Query_Handler,
+			Handler:    _TlnDBService_Query_Handler,
 		},
 		{
 			MethodName: "QueryAsOf",
-			Handler:    _TalonDBService_QueryAsOf_Handler,
+			Handler:    _TlnDBService_QueryAsOf_Handler,
 		},
 		{
 			MethodName: "SequenceJoin",
-			Handler:    _TalonDBService_SequenceJoin_Handler,
+			Handler:    _TlnDBService_SequenceJoin_Handler,
 		},
 		{
 			MethodName: "ClusterQuery",
-			Handler:    _TalonDBService_ClusterQuery_Handler,
+			Handler:    _TlnDBService_ClusterQuery_Handler,
 		},
 		{
 			MethodName: "VectorInsert",
-			Handler:    _TalonDBService_VectorInsert_Handler,
+			Handler:    _TlnDBService_VectorInsert_Handler,
 		},
 		{
 			MethodName: "VectorSearch",
-			Handler:    _TalonDBService_VectorSearch_Handler,
+			Handler:    _TlnDBService_VectorSearch_Handler,
 		},
 		{
 			MethodName: "VectorDelete",
-			Handler:    _TalonDBService_VectorDelete_Handler,
+			Handler:    _TlnDBService_VectorDelete_Handler,
 		},
 		{
 			MethodName: "VectorDropScope",
-			Handler:    _TalonDBService_VectorDropScope_Handler,
+			Handler:    _TlnDBService_VectorDropScope_Handler,
 		},
 		{
 			MethodName: "VectorListScopes",
-			Handler:    _TalonDBService_VectorListScopes_Handler,
+			Handler:    _TlnDBService_VectorListScopes_Handler,
 		},
 		{
 			MethodName: "Health",
-			Handler:    _TalonDBService_Health_Handler,
+			Handler:    _TlnDBService_Health_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Subscribe",
-			Handler:       _TalonDBService_Subscribe_Handler,
+			Handler:       _TlnDBService_Subscribe_Handler,
 			ServerStreams: true,
 		},
 		{
 			StreamName:    "Replicate",
-			Handler:       _TalonDBService_Replicate_Handler,
+			Handler:       _TlnDBService_Replicate_Handler,
 			ServerStreams: true,
 		},
 		{
 			StreamName:    "Snapshot",
-			Handler:       _TalonDBService_Snapshot_Handler,
+			Handler:       _TlnDBService_Snapshot_Handler,
 			ServerStreams: true,
 		},
 	},
-	Metadata: "proto/talondb.proto",
+	Metadata: "proto/tlndb.proto",
 }

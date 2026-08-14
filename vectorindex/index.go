@@ -1,11 +1,11 @@
-// Package vectorindex is the in-memory HNSW layer behind talon-db's
+// Package vectorindex is the in-memory HNSW layer behind tln-db's
 // vector RPCs. One process-wide Index owns a map of (entity, scope) →
 // HNSW graph. Dimension is locked on first insert into a scope —
 // vectors only compare within the same model's embedding space, so
 // silently coercing dimensions would break the recall contract.
 //
 // Persistence is delegated to the caller: this package never touches
-// disk. The talon-db bboltstore wraps an Index alongside a raw-vector
+// disk. The tln-db bboltstore wraps an Index alongside a raw-vector
 // bucket so a process restart can rebuild graphs by replaying the
 // stored vectors.
 package vectorindex

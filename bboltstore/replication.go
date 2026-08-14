@@ -8,9 +8,9 @@ import (
 	"io"
 	"time"
 
-	talondb "github.com/opentalon/talon-db"
-	"github.com/opentalon/talon-db/proto/talondbpb"
-	"github.com/opentalon/talon-db/vectorindex"
+	tlndb "github.com/opentalon/tln-db"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
+	"github.com/opentalon/tln-db/vectorindex"
 
 	"github.com/golang/snappy"
 	bolt "go.etcd.io/bbolt"
@@ -33,7 +33,7 @@ func WithReplication(retention uint64) Option {
 
 // ErrSnapshotRequired is re-exported from the root package; TailOpLog
 // returns it when the requested seq is older than the retained min_seq.
-var ErrSnapshotRequired = talondb.ErrSnapshotRequired
+var ErrSnapshotRequired = tlndb.ErrSnapshotRequired
 
 var errStopTail = errors.New("stop tail batch")
 
@@ -173,17 +173,17 @@ func deleteDocInTx(tx *bolt.Tx, entityID, docID string, oldDoc []byte, at int64)
 
 // ApplyEntry applies a single replicated op-log entry to the local
 // store, atomically advancing applied_seq. Intended for followers.
-func (s *Store) ApplyEntry(entry *talondbpb.OpLogEntry) error {
+func (s *Store) ApplyEntry(entry *tlndbpb.OpLogEntry) error {
 	switch entry.Kind {
-	case talondbpb.OpKind_OP_KIND_DOC_ASSERT, talondbpb.OpKind_OP_KIND_DOC_CHANGE:
+	case tlndbpb.OpKind_OP_KIND_DOC_ASSERT, tlndbpb.OpKind_OP_KIND_DOC_CHANGE:
 		return s.applyDocPut(entry)
-	case talondbpb.OpKind_OP_KIND_DOC_RETRACT:
+	case tlndbpb.OpKind_OP_KIND_DOC_RETRACT:
 		return s.applyDocDelete(entry)
-	case talondbpb.OpKind_OP_KIND_VEC_INSERT:
+	case tlndbpb.OpKind_OP_KIND_VEC_INSERT:
 		return s.applyVecInsert(entry)
-	case talondbpb.OpKind_OP_KIND_VEC_DELETE:
+	case tlndbpb.OpKind_OP_KIND_VEC_DELETE:
 		return s.applyVecDelete(entry)
-	case talondbpb.OpKind_OP_KIND_VEC_DROP_SCOPE:
+	case tlndbpb.OpKind_OP_KIND_VEC_DROP_SCOPE:
 		return s.applyVecDropScope(entry)
 	default:
 		return fmt.Errorf("bboltstore: unknown oplog kind %v (seq %d)", entry.Kind, entry.Seq)
@@ -192,14 +192,14 @@ func (s *Store) ApplyEntry(entry *talondbpb.OpLogEntry) error {
 
 // commitEntryInTx records the entry in the local op-log at its seq and
 // advances applied_seq — all inside the caller's write tx.
-func (s *Store) commitEntryInTx(tx *bolt.Tx, entry *talondbpb.OpLogEntry) error {
+func (s *Store) commitEntryInTx(tx *bolt.Tx, entry *tlndbpb.OpLogEntry) error {
 	if err := putOpLogEntryAt(tx, entry); err != nil {
 		return err
 	}
 	return writeMetaUint64(tx, replMetaBucket, appliedSeqKey, entry.Seq)
 }
 
-func (s *Store) applyDocPut(entry *talondbpb.OpLogEntry) error {
+func (s *Store) applyDocPut(entry *tlndbpb.OpLogEntry) error {
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		oldDoc, err := readDocInTx(tx, entry.EntityId, entry.DocId)
 		if err != nil {
@@ -217,7 +217,7 @@ func (s *Store) applyDocPut(entry *talondbpb.OpLogEntry) error {
 	return err
 }
 
-func (s *Store) applyDocDelete(entry *talondbpb.OpLogEntry) error {
+func (s *Store) applyDocDelete(entry *tlndbpb.OpLogEntry) error {
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		oldDoc, err := readDocInTx(tx, entry.EntityId, entry.DocId)
 		if err != nil {
@@ -236,7 +236,7 @@ func (s *Store) applyDocDelete(entry *talondbpb.OpLogEntry) error {
 	return err
 }
 
-func (s *Store) applyVecInsert(entry *talondbpb.OpLogEntry) error {
+func (s *Store) applyVecInsert(entry *tlndbpb.OpLogEntry) error {
 	idx, err := s.vectorIndex()
 	if err != nil {
 		return err
@@ -255,7 +255,7 @@ func (s *Store) applyVecInsert(entry *talondbpb.OpLogEntry) error {
 	return idx.Insert(entry.EntityId, entry.Scope, entry.DocId, entry.Vector, metric)
 }
 
-func (s *Store) applyVecDelete(entry *talondbpb.OpLogEntry) error {
+func (s *Store) applyVecDelete(entry *tlndbpb.OpLogEntry) error {
 	idx, err := s.vectorIndex()
 	if err != nil {
 		return err
@@ -274,7 +274,7 @@ func (s *Store) applyVecDelete(entry *talondbpb.OpLogEntry) error {
 	return nil
 }
 
-func (s *Store) applyVecDropScope(entry *talondbpb.OpLogEntry) error {
+func (s *Store) applyVecDropScope(entry *tlndbpb.OpLogEntry) error {
 	idx, err := s.vectorIndex()
 	if err != nil {
 		return err
@@ -317,7 +317,7 @@ func (s *Store) WriteSnapshot(w io.Writer, onSeq func(uint64) error) error {
 
 // ReadOpLog invokes fn for each op-log entry with seq >= fromSeq, in
 // order, without following live. Handy for debugging and tests.
-func (s *Store) ReadOpLog(fromSeq uint64, fn func(*talondbpb.OpLogEntry) error) error {
+func (s *Store) ReadOpLog(fromSeq uint64, fn func(*tlndbpb.OpLogEntry) error) error {
 	return s.db.View(func(tx *bolt.Tx) error {
 		_, err := readOpLogFrom(tx, fromSeq, fn)
 		return err
@@ -327,7 +327,7 @@ func (s *Store) ReadOpLog(fromSeq uint64, fn func(*talondbpb.OpLogEntry) error) 
 // TailOpLog streams op-log entries with seq >= fromSeq to fn, in order,
 // then follows live until ctx is done. Entries are read in bounded
 // batches so the read transaction is never held across a network send.
-func (s *Store) TailOpLog(ctx context.Context, fromSeq uint64, fn func(*talondbpb.OpLogEntry) error) error {
+func (s *Store) TailOpLog(ctx context.Context, fromSeq uint64, fn func(*tlndbpb.OpLogEntry) error) error {
 	if min := s.MinSeq(); min > 0 && fromSeq < min {
 		return ErrSnapshotRequired
 	}
@@ -339,9 +339,9 @@ func (s *Store) TailOpLog(ctx context.Context, fromSeq uint64, fn func(*talondbp
 	for {
 		ch := s.replWaitCh()
 
-		var batch []*talondbpb.OpLogEntry
+		var batch []*tlndbpb.OpLogEntry
 		err := s.db.View(func(tx *bolt.Tx) error {
-			_, e := readOpLogFrom(tx, from, func(entry *talondbpb.OpLogEntry) error {
+			_, e := readOpLogFrom(tx, from, func(entry *tlndbpb.OpLogEntry) error {
 				batch = append(batch, entry)
 				if len(batch) >= batchSize {
 					return errStopTail

@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // putJSON puts a JSON doc keyed by docID into tenant-a.
-func putJSON(t *testing.T, c talondbpb.TalonDBServiceClient, docID, body string) {
+func putJSON(t *testing.T, c tlndbpb.TlnDBServiceClient, docID, body string) {
 	t.Helper()
-	if _, err := c.Put(context.Background(), &talondbpb.PutRequest{
+	if _, err := c.Put(context.Background(), &tlndbpb.PutRequest{
 		EntityId: "tenant-a", DocId: docID, Doc: []byte(body),
 	}); err != nil {
 		t.Fatalf("Put %s: %v", docID, err)
@@ -20,16 +20,16 @@ func putJSON(t *testing.T, c talondbpb.TalonDBServiceClient, docID, body string)
 }
 
 // strTerm / numTerm / varTerm / boolTerm are tiny constructors that
-// match the talon-language adapter's call shape; we use them
+// match the tln-language adapter's call shape; we use them
 // throughout the test file to keep the query construction readable.
-func strTerm(s string) *talondbpb.Term {
-	return &talondbpb.Term{Literal: structpb.NewStringValue(s)}
+func strTerm(s string) *tlndbpb.Term {
+	return &tlndbpb.Term{Literal: structpb.NewStringValue(s)}
 }
-func numTerm(n float64) *talondbpb.Term {
-	return &talondbpb.Term{Literal: structpb.NewNumberValue(n)}
+func numTerm(n float64) *tlndbpb.Term {
+	return &tlndbpb.Term{Literal: structpb.NewNumberValue(n)}
 }
-func varTerm(name string) *talondbpb.Term {
-	return &talondbpb.Term{Var: name}
+func varTerm(name string) *tlndbpb.Term {
+	return &tlndbpb.Term{Var: name}
 }
 
 func TestGRPCQueryPatternOnly(t *testing.T) {
@@ -42,11 +42,11 @@ func TestGRPCQueryPatternOnly(t *testing.T) {
 	putJSON(t, c, "502", `{":record/type":"item",":record/status":"retired"}`)
 	putJSON(t, c, "601", `{":record/type":"category"}`)
 
-	resp, err := c.Query(ctx, &talondbpb.QueryRequest{
+	resp, err := c.Query(ctx, &tlndbpb.QueryRequest{
 		EntityId: "tenant-a",
 		Find:     []string{"?e"},
-		Where: []*talondbpb.Clause{
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+		Where: []*tlndbpb.Clause{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity:    varTerm("?e"),
 				Attribute: ":record/type",
 				Value:     strTerm("item"),
@@ -71,17 +71,17 @@ func TestGRPCQueryWithPredicate(t *testing.T) {
 	putJSON(t, c, "502", `{":record/type":"item",":attr/km":10000}`)
 	putJSON(t, c, "503", `{":record/type":"item",":attr/km":99999}`)
 
-	resp, err := c.Query(ctx, &talondbpb.QueryRequest{
+	resp, err := c.Query(ctx, &tlndbpb.QueryRequest{
 		EntityId: "tenant-a",
 		Find:     []string{"?e", "?km"},
-		Where: []*talondbpb.Clause{
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+		Where: []*tlndbpb.Clause{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":record/type", Value: strTerm("item"),
 			}}},
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":attr/km", Value: varTerm("?km"),
 			}}},
-			{Clause: &talondbpb.Clause_Predicate{Predicate: &talondbpb.Predicate{
+			{Clause: &tlndbpb.Clause_Predicate{Predicate: &tlndbpb.Predicate{
 				Op: ">", Left: varTerm("?km"), Right: numTerm(20000),
 			}}},
 		},
@@ -104,23 +104,23 @@ func TestGRPCQueryOr(t *testing.T) {
 	putJSON(t, c, "502", `{":record/type":"item",":record/status":"scheduled"}`)
 	putJSON(t, c, "503", `{":record/type":"item",":record/status":"retired"}`)
 
-	statusActive := &talondbpb.Pattern{
+	statusActive := &tlndbpb.Pattern{
 		Entity: varTerm("?e"), Attribute: ":record/status", Value: strTerm("active"),
 	}
-	statusScheduled := &talondbpb.Pattern{
+	statusScheduled := &tlndbpb.Pattern{
 		Entity: varTerm("?e"), Attribute: ":record/status", Value: strTerm("scheduled"),
 	}
 
-	resp, err := c.Query(ctx, &talondbpb.QueryRequest{
+	resp, err := c.Query(ctx, &tlndbpb.QueryRequest{
 		EntityId: "tenant-a",
 		Find:     []string{"?e"},
-		Where: []*talondbpb.Clause{
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+		Where: []*tlndbpb.Clause{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":record/type", Value: strTerm("item"),
 			}}},
-			{Clause: &talondbpb.Clause_Or{Or: &talondbpb.Or{Branches: []*talondbpb.ClauseList{
-				{Clauses: []*talondbpb.Clause{{Clause: &talondbpb.Clause_Pattern{Pattern: statusActive}}}},
-				{Clauses: []*talondbpb.Clause{{Clause: &talondbpb.Clause_Pattern{Pattern: statusScheduled}}}},
+			{Clause: &tlndbpb.Clause_Or{Or: &tlndbpb.Or{Branches: []*tlndbpb.ClauseList{
+				{Clauses: []*tlndbpb.Clause{{Clause: &tlndbpb.Clause_Pattern{Pattern: statusActive}}}},
+				{Clauses: []*tlndbpb.Clause{{Clause: &tlndbpb.Clause_Pattern{Pattern: statusScheduled}}}},
 			}}}},
 		},
 	})
@@ -142,15 +142,15 @@ func TestGRPCQueryNot(t *testing.T) {
 	putJSON(t, c, "502", `{":record/type":"item",":record/status":"retired"}`)
 	putJSON(t, c, "503", `{":record/type":"item",":record/status":"scheduled"}`)
 
-	resp, err := c.Query(ctx, &talondbpb.QueryRequest{
+	resp, err := c.Query(ctx, &tlndbpb.QueryRequest{
 		EntityId: "tenant-a",
 		Find:     []string{"?e"},
-		Where: []*talondbpb.Clause{
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+		Where: []*tlndbpb.Clause{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":record/type", Value: strTerm("item"),
 			}}},
-			{Clause: &talondbpb.Clause_Not{Not: &talondbpb.Not{Body: []*talondbpb.Clause{
-				{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+			{Clause: &tlndbpb.Clause_Not{Not: &tlndbpb.Not{Body: []*tlndbpb.Clause{
+				{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 					Entity: varTerm("?e"), Attribute: ":record/status", Value: strTerm("retired"),
 				}}},
 			}}}},
@@ -173,14 +173,14 @@ func TestGRPCQueryFullText(t *testing.T) {
 	putJSON(t, c, "601", `{":record/type":"category",":record/name":"Vehicles"}`)
 	putJSON(t, c, "602", `{":record/type":"category",":record/name":"Buildings"}`)
 
-	resp, err := c.Query(ctx, &talondbpb.QueryRequest{
+	resp, err := c.Query(ctx, &tlndbpb.QueryRequest{
 		EntityId: "tenant-a",
 		Find:     []string{"?e"},
-		Where: []*talondbpb.Clause{
-			{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+		Where: []*tlndbpb.Clause{
+			{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 				Entity: varTerm("?e"), Attribute: ":record/type", Value: strTerm("category"),
 			}}},
-			{Clause: &talondbpb.Clause_Fulltext{Fulltext: &talondbpb.FullText{
+			{Clause: &tlndbpb.Clause_Fulltext{Fulltext: &tlndbpb.FullText{
 				Entity: varTerm("?e"), Attribute: ":record/name", Query: "vehic",
 			}}},
 		},
@@ -201,11 +201,11 @@ func TestGRPCQueryNoAnchorErrors(t *testing.T) {
 
 	// Query has only a Predicate, no literal-anchor Pattern. Server
 	// rejects since it can't narrow.
-	_, err := c.Query(ctx, &talondbpb.QueryRequest{
+	_, err := c.Query(ctx, &tlndbpb.QueryRequest{
 		EntityId: "tenant-a",
 		Find:     []string{"?e"},
-		Where: []*talondbpb.Clause{
-			{Clause: &talondbpb.Clause_Predicate{Predicate: &talondbpb.Predicate{
+		Where: []*tlndbpb.Clause{
+			{Clause: &tlndbpb.Clause_Predicate{Predicate: &tlndbpb.Predicate{
 				Op: "==", Left: varTerm("?e"), Right: numTerm(1),
 			}}},
 		},

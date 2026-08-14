@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	talondb "github.com/opentalon/talon-db"
-	"github.com/opentalon/talon-db/proto/talondbpb"
-	"github.com/opentalon/talon-db/vectorindex"
+	tlndb "github.com/opentalon/tln-db"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
+	"github.com/opentalon/tln-db/vectorindex"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -36,7 +36,7 @@ func (s *Server) vectorBackend() (vectorStore, error) {
 // the in-memory index uses. The metric argument is only honoured on
 // the first insert into a (entity, scope) pair; later inserts keep the
 // scope's original metric.
-func (s *Server) VectorInsert(ctx context.Context, req *talondbpb.VectorInsertRequest) (*emptypb.Empty, error) {
+func (s *Server) VectorInsert(ctx context.Context, req *tlndbpb.VectorInsertRequest) (*emptypb.Empty, error) {
 	if s.readOnly {
 		return nil, s.roErr()
 	}
@@ -56,7 +56,7 @@ func (s *Server) VectorInsert(ctx context.Context, req *talondbpb.VectorInsertRe
 	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) VectorSearch(ctx context.Context, req *talondbpb.VectorSearchRequest) (*talondbpb.VectorSearchResponse, error) {
+func (s *Server) VectorSearch(ctx context.Context, req *tlndbpb.VectorSearchRequest) (*tlndbpb.VectorSearchResponse, error) {
 	v, err := s.vectorBackend()
 	if err != nil {
 		return nil, err
@@ -70,14 +70,14 @@ func (s *Server) VectorSearch(ctx context.Context, req *talondbpb.VectorSearchRe
 	if err != nil {
 		return nil, mapVectorError(err)
 	}
-	out := &talondbpb.VectorSearchResponse{Hits: make([]*talondbpb.VectorHit, 0, len(hits))}
+	out := &tlndbpb.VectorSearchResponse{Hits: make([]*tlndbpb.VectorHit, 0, len(hits))}
 	for _, h := range hits {
-		out.Hits = append(out.Hits, &talondbpb.VectorHit{Id: h.ID, Distance: h.Distance})
+		out.Hits = append(out.Hits, &tlndbpb.VectorHit{Id: h.ID, Distance: h.Distance})
 	}
 	return out, nil
 }
 
-func (s *Server) VectorDelete(ctx context.Context, req *talondbpb.VectorDeleteRequest) (*emptypb.Empty, error) {
+func (s *Server) VectorDelete(ctx context.Context, req *tlndbpb.VectorDeleteRequest) (*emptypb.Empty, error) {
 	if s.readOnly {
 		return nil, s.roErr()
 	}
@@ -91,7 +91,7 @@ func (s *Server) VectorDelete(ctx context.Context, req *talondbpb.VectorDeleteRe
 	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) VectorDropScope(ctx context.Context, req *talondbpb.VectorDropScopeRequest) (*emptypb.Empty, error) {
+func (s *Server) VectorDropScope(ctx context.Context, req *tlndbpb.VectorDropScopeRequest) (*emptypb.Empty, error) {
 	if s.readOnly {
 		return nil, s.roErr()
 	}
@@ -105,7 +105,7 @@ func (s *Server) VectorDropScope(ctx context.Context, req *talondbpb.VectorDropS
 	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) VectorListScopes(ctx context.Context, req *talondbpb.VectorListScopesRequest) (*talondbpb.VectorListScopesResponse, error) {
+func (s *Server) VectorListScopes(ctx context.Context, req *tlndbpb.VectorListScopesRequest) (*tlndbpb.VectorListScopesResponse, error) {
 	v, err := s.vectorBackend()
 	if err != nil {
 		return nil, err
@@ -114,9 +114,9 @@ func (s *Server) VectorListScopes(ctx context.Context, req *talondbpb.VectorList
 	if err != nil {
 		return nil, mapVectorError(err)
 	}
-	out := &talondbpb.VectorListScopesResponse{Scopes: make([]*talondbpb.VectorScope, 0, len(scopes))}
+	out := &tlndbpb.VectorListScopesResponse{Scopes: make([]*tlndbpb.VectorScope, 0, len(scopes))}
 	for _, s := range scopes {
-		out.Scopes = append(out.Scopes, &talondbpb.VectorScope{
+		out.Scopes = append(out.Scopes, &tlndbpb.VectorScope{
 			Scope:  s.Scope,
 			Dim:    int32(s.Dim),
 			Count:  int32(s.Count),
@@ -126,9 +126,9 @@ func (s *Server) VectorListScopes(ctx context.Context, req *talondbpb.VectorList
 	return out, nil
 }
 
-func metricFromProto(m talondbpb.VectorMetric) vectorindex.Metric {
+func metricFromProto(m tlndbpb.VectorMetric) vectorindex.Metric {
 	switch m {
-	case talondbpb.VectorMetric_VECTOR_METRIC_EUCLIDEAN:
+	case tlndbpb.VectorMetric_VECTOR_METRIC_EUCLIDEAN:
 		return vectorindex.Euclidean
 	default:
 		// UNSPECIFIED + COSINE both fall through to Cosine — Cosine is
@@ -137,18 +137,18 @@ func metricFromProto(m talondbpb.VectorMetric) vectorindex.Metric {
 	}
 }
 
-func metricToProto(m vectorindex.Metric) talondbpb.VectorMetric {
+func metricToProto(m vectorindex.Metric) tlndbpb.VectorMetric {
 	switch m {
 	case vectorindex.Euclidean:
-		return talondbpb.VectorMetric_VECTOR_METRIC_EUCLIDEAN
+		return tlndbpb.VectorMetric_VECTOR_METRIC_EUCLIDEAN
 	default:
-		return talondbpb.VectorMetric_VECTOR_METRIC_COSINE
+		return tlndbpb.VectorMetric_VECTOR_METRIC_COSINE
 	}
 }
 
-// mapVectorError converts the vectorindex sentinels + talondb.ErrNotFound
+// mapVectorError converts the vectorindex sentinels + tlndb.ErrNotFound
 // to gRPC status codes. Dimension mismatch + empty-vector are caller
-// bugs (InvalidArgument); ScopeNotFound / talondb.ErrNotFound are
+// bugs (InvalidArgument); ScopeNotFound / tlndb.ErrNotFound are
 // NotFound; anything else is surfaced as Internal so it shows up
 // loudly in logs.
 func mapVectorError(err error) error {
@@ -159,7 +159,7 @@ func mapVectorError(err error) error {
 		errors.Is(err, vectorindex.ErrEmptyVector):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, vectorindex.ErrScopeNotFound),
-		errors.Is(err, talondb.ErrNotFound):
+		errors.Is(err, tlndb.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	default:
 		return status.Error(codes.Internal, err.Error())

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 )
 
 // TestGRPCQueryAsOf drives the time-travel RPC end-to-end: a record that
@@ -26,11 +26,11 @@ func TestGRPCQueryAsOf(t *testing.T) {
 	putJSON(t, c, "501", `{":record/type":"item",":record/status":"retired"}`)
 
 	activeAsOf := func(at time.Time) int {
-		resp, err := c.QueryAsOf(ctx, &talondbpb.QueryAsOfRequest{
+		resp, err := c.QueryAsOf(ctx, &tlndbpb.QueryAsOfRequest{
 			EntityId: "tenant-a",
 			Find:     []string{"?e"},
-			Where: []*talondbpb.Clause{
-				{Clause: &talondbpb.Clause_Pattern{Pattern: &talondbpb.Pattern{
+			Where: []*tlndbpb.Clause{
+				{Clause: &tlndbpb.Clause_Pattern{Pattern: &tlndbpb.Pattern{
 					Entity:    varTerm("?e"),
 					Attribute: ":record/status",
 					Value:     strTerm("active"),

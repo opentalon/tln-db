@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	talondb "github.com/opentalon/talon-db"
-	"github.com/opentalon/talon-db/bboltstore"
-	"github.com/opentalon/talon-db/vectorindex"
+	tlndb "github.com/opentalon/tln-db"
+	"github.com/opentalon/tln-db/bboltstore"
+	"github.com/opentalon/tln-db/vectorindex"
 )
 
 func openStore(t *testing.T) *bboltstore.Store {
@@ -102,10 +102,10 @@ func TestVectorDeleteRemovesFromBboltAndIndex(t *testing.T) {
 	if err := s.VectorDelete(ctx, "t", "s", "b"); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	// Deleting a missing id surfaces talondb.ErrNotFound — distinct
+	// Deleting a missing id surfaces tlndb.ErrNotFound — distinct
 	// from "scope doesn't exist" so callers can treat the second case
 	// as a configuration error.
-	if err := s.VectorDelete(ctx, "t", "s", "missing"); !errors.Is(err, talondb.ErrNotFound) {
+	if err := s.VectorDelete(ctx, "t", "s", "missing"); !errors.Is(err, tlndb.ErrNotFound) {
 		t.Errorf("Delete missing: want ErrNotFound, got %v", err)
 	}
 
@@ -130,7 +130,7 @@ func TestVectorDropScopeClearsAllState(t *testing.T) {
 	if err := s1.VectorDropScope(ctx, "t", "v3"); err != nil {
 		t.Fatalf("DropScope: %v", err)
 	}
-	if err := s1.VectorDropScope(ctx, "t", "ghost"); !errors.Is(err, talondb.ErrNotFound) {
+	if err := s1.VectorDropScope(ctx, "t", "ghost"); !errors.Is(err, tlndb.ErrNotFound) {
 		t.Errorf("DropScope ghost: want ErrNotFound, got %v", err)
 	}
 	_ = s1.Close()

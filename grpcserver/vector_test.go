@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,17 +21,17 @@ func TestGRPCVectorInsertSearchRoundtrip(t *testing.T) {
 		{0, 1, 0},
 		{0, 0, 1},
 	} {
-		if _, err := client.VectorInsert(ctx, &talondbpb.VectorInsertRequest{
+		if _, err := client.VectorInsert(ctx, &tlndbpb.VectorInsertRequest{
 			EntityId: "tenant-a",
 			Scope:    "embed3",
 			Id:       string(rune('a' + i)),
 			Vector:   v,
-			Metric:   talondbpb.VectorMetric_VECTOR_METRIC_COSINE,
+			Metric:   tlndbpb.VectorMetric_VECTOR_METRIC_COSINE,
 		}); err != nil {
 			t.Fatalf("VectorInsert %d: %v", i, err)
 		}
 	}
-	resp, err := client.VectorSearch(ctx, &talondbpb.VectorSearchRequest{
+	resp, err := client.VectorSearch(ctx, &tlndbpb.VectorSearchRequest{
 		EntityId: "tenant-a",
 		Scope:    "embed3",
 		Vector:   []float32{1, 0, 0},
@@ -70,7 +70,7 @@ func TestGRPCVectorScopeIsolation(t *testing.T) {
 		{"medium", "m2", []float32{0, 0, 0, 0, 1, 1, 1, 1}},
 		{"large", "l1", append(make([]float32, 15), 1)},
 	} {
-		if _, err := client.VectorInsert(ctx, &talondbpb.VectorInsertRequest{
+		if _, err := client.VectorInsert(ctx, &tlndbpb.VectorInsertRequest{
 			EntityId: "tenant-a", Scope: w.scope, Id: w.id, Vector: w.v,
 		}); err != nil {
 			t.Fatalf("insert %s/%s: %v", w.scope, w.id, err)
@@ -78,13 +78,13 @@ func TestGRPCVectorScopeIsolation(t *testing.T) {
 	}
 
 	// Search in each scope's own dim — exactly the right vector returns.
-	res, err := client.VectorSearch(ctx, &talondbpb.VectorSearchRequest{
+	res, err := client.VectorSearch(ctx, &tlndbpb.VectorSearchRequest{
 		EntityId: "tenant-a", Scope: "small", Vector: []float32{1, 0, 0}, K: 1,
 	})
 	if err != nil || len(res.GetHits()) != 1 || res.GetHits()[0].GetId() != "s1" {
 		t.Errorf("small search: %v %v", err, res.GetHits())
 	}
-	res, err = client.VectorSearch(ctx, &talondbpb.VectorSearchRequest{
+	res, err = client.VectorSearch(ctx, &tlndbpb.VectorSearchRequest{
 		EntityId: "tenant-a", Scope: "medium", Vector: []float32{0, 0, 0, 0, 1, 1, 1, 1}, K: 1,
 	})
 	if err != nil || len(res.GetHits()) != 1 || res.GetHits()[0].GetId() != "m2" {
@@ -92,7 +92,7 @@ func TestGRPCVectorScopeIsolation(t *testing.T) {
 	}
 
 	// Wrong-dimension query → InvalidArgument from the typed mapper.
-	_, err = client.VectorSearch(ctx, &talondbpb.VectorSearchRequest{
+	_, err = client.VectorSearch(ctx, &tlndbpb.VectorSearchRequest{
 		EntityId: "tenant-a", Scope: "small", Vector: []float32{1, 1, 1, 1, 0, 0, 0, 0}, K: 1,
 	})
 	if got := status.Code(err); got != codes.InvalidArgument {
@@ -106,7 +106,7 @@ func TestGRPCVectorUnknownScopeReturnsNotFound(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	_, err := client.VectorSearch(ctx, &talondbpb.VectorSearchRequest{
+	_, err := client.VectorSearch(ctx, &tlndbpb.VectorSearchRequest{
 		EntityId: "tenant-a", Scope: "ghost", Vector: []float32{1, 2, 3}, K: 1,
 	})
 	if got := status.Code(err); got != codes.NotFound {
@@ -125,19 +125,19 @@ func TestGRPCVectorDeleteAndDropScope(t *testing.T) {
 		{0, 1, 0},
 		{0, 0, 1},
 	} {
-		if _, err := client.VectorInsert(ctx, &talondbpb.VectorInsertRequest{
+		if _, err := client.VectorInsert(ctx, &tlndbpb.VectorInsertRequest{
 			EntityId: "tenant-a", Scope: "s", Id: string(rune('a' + i)), Vector: v,
 		}); err != nil {
 			t.Fatalf("Insert %d: %v", i, err)
 		}
 	}
 
-	if _, err := client.VectorDelete(ctx, &talondbpb.VectorDeleteRequest{
+	if _, err := client.VectorDelete(ctx, &tlndbpb.VectorDeleteRequest{
 		EntityId: "tenant-a", Scope: "s", Id: "b",
 	}); err != nil {
 		t.Fatalf("VectorDelete: %v", err)
 	}
-	res, err := client.VectorSearch(ctx, &talondbpb.VectorSearchRequest{
+	res, err := client.VectorSearch(ctx, &tlndbpb.VectorSearchRequest{
 		EntityId: "tenant-a", Scope: "s", Vector: []float32{0, 1, 0}, K: 5,
 	})
 	if err != nil {
@@ -150,7 +150,7 @@ func TestGRPCVectorDeleteAndDropScope(t *testing.T) {
 	}
 
 	// Deleting an unknown id surfaces NotFound.
-	_, err = client.VectorDelete(ctx, &talondbpb.VectorDeleteRequest{
+	_, err = client.VectorDelete(ctx, &tlndbpb.VectorDeleteRequest{
 		EntityId: "tenant-a", Scope: "s", Id: "missing",
 	})
 	if got := status.Code(err); got != codes.NotFound {
@@ -158,12 +158,12 @@ func TestGRPCVectorDeleteAndDropScope(t *testing.T) {
 	}
 
 	// DropScope removes everything; subsequent Search returns NotFound.
-	if _, err := client.VectorDropScope(ctx, &talondbpb.VectorDropScopeRequest{
+	if _, err := client.VectorDropScope(ctx, &tlndbpb.VectorDropScopeRequest{
 		EntityId: "tenant-a", Scope: "s",
 	}); err != nil {
 		t.Fatalf("DropScope: %v", err)
 	}
-	_, err = client.VectorSearch(ctx, &talondbpb.VectorSearchRequest{
+	_, err = client.VectorSearch(ctx, &tlndbpb.VectorSearchRequest{
 		EntityId: "tenant-a", Scope: "s", Vector: []float32{1, 0, 0}, K: 1,
 	})
 	if got := status.Code(err); got != codes.NotFound {
@@ -171,7 +171,7 @@ func TestGRPCVectorDeleteAndDropScope(t *testing.T) {
 	}
 
 	// DropScope on a never-existed scope is NotFound, not silent.
-	_, err = client.VectorDropScope(ctx, &talondbpb.VectorDropScopeRequest{
+	_, err = client.VectorDropScope(ctx, &tlndbpb.VectorDropScopeRequest{
 		EntityId: "tenant-a", Scope: "ghost",
 	})
 	if got := status.Code(err); got != codes.NotFound {
@@ -185,21 +185,21 @@ func TestGRPCVectorListScopes(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	_, _ = client.VectorInsert(ctx, &talondbpb.VectorInsertRequest{
+	_, _ = client.VectorInsert(ctx, &tlndbpb.VectorInsertRequest{
 		EntityId: "tenant-a", Scope: "zebra", Id: "z", Vector: []float32{1, 0},
-		Metric: talondbpb.VectorMetric_VECTOR_METRIC_EUCLIDEAN,
+		Metric: tlndbpb.VectorMetric_VECTOR_METRIC_EUCLIDEAN,
 	})
-	_, _ = client.VectorInsert(ctx, &talondbpb.VectorInsertRequest{
+	_, _ = client.VectorInsert(ctx, &tlndbpb.VectorInsertRequest{
 		EntityId: "tenant-a", Scope: "apple", Id: "a", Vector: []float32{1, 0, 0},
 	})
-	_, _ = client.VectorInsert(ctx, &talondbpb.VectorInsertRequest{
+	_, _ = client.VectorInsert(ctx, &tlndbpb.VectorInsertRequest{
 		EntityId: "tenant-a", Scope: "apple", Id: "b", Vector: []float32{0, 1, 0},
 	})
-	_, _ = client.VectorInsert(ctx, &talondbpb.VectorInsertRequest{
+	_, _ = client.VectorInsert(ctx, &tlndbpb.VectorInsertRequest{
 		EntityId: "tenant-b", Scope: "ghost", Id: "g", Vector: []float32{1},
 	})
 
-	res, err := client.VectorListScopes(ctx, &talondbpb.VectorListScopesRequest{
+	res, err := client.VectorListScopes(ctx, &tlndbpb.VectorListScopesRequest{
 		EntityId: "tenant-a",
 	})
 	if err != nil {
@@ -211,7 +211,7 @@ func TestGRPCVectorListScopes(t *testing.T) {
 	if res.GetScopes()[0].GetScope() != "apple" || res.GetScopes()[0].GetCount() != 2 || res.GetScopes()[0].GetDim() != 3 {
 		t.Errorf("scopes[0] = %+v", res.GetScopes()[0])
 	}
-	if res.GetScopes()[1].GetScope() != "zebra" || res.GetScopes()[1].GetMetric() != talondbpb.VectorMetric_VECTOR_METRIC_EUCLIDEAN {
+	if res.GetScopes()[1].GetScope() != "zebra" || res.GetScopes()[1].GetMetric() != tlndbpb.VectorMetric_VECTOR_METRIC_EUCLIDEAN {
 		t.Errorf("scopes[1] = %+v", res.GetScopes()[1])
 	}
 }
@@ -224,17 +224,17 @@ func TestGRPCVectorTenantIsolation(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 
-	if _, err := client.VectorInsert(ctx, &talondbpb.VectorInsertRequest{
+	if _, err := client.VectorInsert(ctx, &tlndbpb.VectorInsertRequest{
 		EntityId: "tenant-a", Scope: "s", Id: "a1", Vector: []float32{1, 0, 0},
 	}); err != nil {
 		t.Fatalf("a: %v", err)
 	}
-	if _, err := client.VectorInsert(ctx, &talondbpb.VectorInsertRequest{
+	if _, err := client.VectorInsert(ctx, &tlndbpb.VectorInsertRequest{
 		EntityId: "tenant-b", Scope: "s", Id: "b1", Vector: []float32{1, 0, 0, 0},
 	}); err != nil {
 		t.Fatalf("b: %v", err)
 	}
-	res, err := client.VectorSearch(ctx, &talondbpb.VectorSearchRequest{
+	res, err := client.VectorSearch(ctx, &tlndbpb.VectorSearchRequest{
 		EntityId: "tenant-b", Scope: "s", Vector: []float32{1, 0, 0, 0}, K: 5,
 	})
 	if err != nil {

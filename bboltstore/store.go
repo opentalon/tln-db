@@ -1,5 +1,5 @@
 // Package bboltstore provides the bbolt-backed implementation of
-// talondb.DocumentStore. Documents are snappy-compressed and stored in
+// tlndb.DocumentStore. Documents are snappy-compressed and stored in
 // per-tenant buckets; metadata (created_at, updated_at, version) lives
 // alongside in a sibling bucket and is updated in the same transaction.
 package bboltstore
@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	talondb "github.com/opentalon/talon-db"
-	"github.com/opentalon/talon-db/proto/talondbpb"
-	"github.com/opentalon/talon-db/vectorindex"
+	tlndb "github.com/opentalon/tln-db"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
+	"github.com/opentalon/tln-db/vectorindex"
 
 	"github.com/golang/snappy"
 	bolt "go.etcd.io/bbolt"
@@ -30,7 +30,7 @@ const (
 type Store struct {
 	db     *bolt.DB
 	now    func() time.Time
-	events talondb.EventEmitter
+	events tlndb.EventEmitter
 
 	// Vector index — lazily rebuilt from the vec_registry / vec_data
 	// buckets on first access. vecOnce gates the rebuild; vecLoadErr
@@ -70,10 +70,10 @@ func Open(path string, opts ...Option) (*Store, error) {
 }
 
 // Events returns the mutation event emitter. Subscribers receive a
-// talondb.MutationEvent after every committed Put / Delete /
+// tlndb.MutationEvent after every committed Put / Delete /
 // BatchPut. Emission is post-commit and runs outside the bbolt write
 // lock so subscribers may call back into the store.
-func (s *Store) Events() *talondb.EventEmitter {
+func (s *Store) Events() *tlndb.EventEmitter {
 	return &s.events
 }
 
@@ -154,7 +154,7 @@ func (s *Store) Put(ctx context.Context, entityID, docID string, doc []byte) err
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	var pending []talondb.MutationEvent
+	var pending []tlndb.MutationEvent
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		ev, err := s.putInTxEvents(tx, entityID, docID, doc)
 		if err != nil {
@@ -188,11 +188,11 @@ func (s *Store) Get(ctx context.Context, entityID, docID string) ([]byte, error)
 	err := s.db.View(func(tx *bolt.Tx) error {
 		docs := tx.Bucket([]byte(docsBucketPrefix + entityID))
 		if docs == nil {
-			return talondb.ErrNotFound
+			return tlndb.ErrNotFound
 		}
 		raw := docs.Get([]byte(docID))
 		if raw == nil {
-			return talondb.ErrNotFound
+			return tlndb.ErrNotFound
 		}
 		decoded, err := snappy.Decode(nil, raw)
 		if err != nil {
@@ -217,7 +217,7 @@ func (s *Store) Delete(ctx context.Context, entityID, docID string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	var pending *talondb.MutationEvent
+	var pending *tlndb.MutationEvent
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		oldDoc, err := readDocInTx(tx, entityID, docID)
 		if err != nil {
@@ -231,8 +231,8 @@ func (s *Store) Delete(ctx context.Context, entityID, docID string) error {
 			return err
 		}
 		if s.replEnabled {
-			if _, err := appendOpLog(tx, &talondbpb.OpLogEntry{
-				Kind:        talondbpb.OpKind_OP_KIND_DOC_RETRACT,
+			if _, err := appendOpLog(tx, &tlndbpb.OpLogEntry{
+				Kind:        tlndbpb.OpKind_OP_KIND_DOC_RETRACT,
 				EntityId:    entityID,
 				DocId:       docID,
 				AtUnixNanos: delAt,
@@ -240,8 +240,8 @@ func (s *Store) Delete(ctx context.Context, entityID, docID string) error {
 				return err
 			}
 		}
-		pending = &talondb.MutationEvent{
-			Kind:        talondb.EventRetract,
+		pending = &tlndb.MutationEvent{
+			Kind:        tlndb.EventRetract,
 			EntityID:    entityID,
 			DocID:       docID,
 			OldDoc:      oldDoc,
@@ -276,7 +276,7 @@ func (s *Store) BatchPut(ctx context.Context, entityID string, docs map[string][
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	var pending []talondb.MutationEvent
+	var pending []tlndb.MutationEvent
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		for docID, doc := range docs {
 			if err := ctx.Err(); err != nil {
@@ -345,7 +345,7 @@ var errStopScan = errors.New("stop scan")
 // nil when the write is a no-op, e.g. an identical re-Put — currently
 // always non-nil because we always bump the version counter even on
 // identical bytes; refine if we ever add idempotency).
-func (s *Store) putInTxEvents(tx *bolt.Tx, entityID, docID string, doc []byte) (*talondb.MutationEvent, error) {
+func (s *Store) putInTxEvents(tx *bolt.Tx, entityID, docID string, doc []byte) (*tlndb.MutationEvent, error) {
 	// Capture the prior doc bytes (if any) for index delta computation
 	// and the OldDoc field of the MutationEvent.
 	oldDoc, err := readDocInTx(tx, entityID, docID)
@@ -369,15 +369,15 @@ func (s *Store) putInTxEvents(tx *bolt.Tx, entityID, docID string, doc []byte) (
 		return nil, err
 	}
 
-	kind := talondb.EventAssert
-	opKind := talondbpb.OpKind_OP_KIND_DOC_ASSERT
+	kind := tlndb.EventAssert
+	opKind := tlndbpb.OpKind_OP_KIND_DOC_ASSERT
 	if oldDoc != nil {
-		kind = talondb.EventChange
-		opKind = talondbpb.OpKind_OP_KIND_DOC_CHANGE
+		kind = tlndb.EventChange
+		opKind = tlndbpb.OpKind_OP_KIND_DOC_CHANGE
 	}
 
 	if s.replEnabled {
-		if _, err := appendOpLog(tx, &talondbpb.OpLogEntry{
+		if _, err := appendOpLog(tx, &tlndbpb.OpLogEntry{
 			Kind:        opKind,
 			EntityId:    entityID,
 			DocId:       docID,
@@ -391,7 +391,7 @@ func (s *Store) putInTxEvents(tx *bolt.Tx, entityID, docID string, doc []byte) (
 		}
 	}
 
-	return &talondb.MutationEvent{
+	return &tlndb.MutationEvent{
 		Kind:        kind,
 		EntityID:    entityID,
 		DocID:       docID,
@@ -410,10 +410,10 @@ func validateIDs(entityID, docID string) error {
 
 func validateEntityID(entityID string) error {
 	if entityID == "" {
-		return fmt.Errorf("%w: empty", talondb.ErrInvalidEntityID)
+		return fmt.Errorf("%w: empty", tlndb.ErrInvalidEntityID)
 	}
 	if strings.Contains(entityID, ":") {
-		return fmt.Errorf("%w: contains reserved character ':'", talondb.ErrInvalidEntityID)
+		return fmt.Errorf("%w: contains reserved character ':'", tlndb.ErrInvalidEntityID)
 	}
 	return nil
 }
@@ -425,4 +425,4 @@ func validateDocID(docID string) error {
 	return nil
 }
 
-var _ talondb.DocumentStore = (*Store)(nil)
+var _ tlndb.DocumentStore = (*Store)(nil)

@@ -8,10 +8,10 @@ import (
 )
 
 // serverConfig holds the resolved listener/storage settings for
-// talondb-server. Values are merged from four sources, in increasing
+// tlndb-server. Values are merged from four sources, in increasing
 // order of precedence:
 //
-//	built-in defaults → config file (--config) → TALONDB_* env vars →
+//	built-in defaults → config file (--config) → TLNDB_* env vars →
 //	explicitly-set command-line flags
 //
 // This lets a Kubernetes ConfigMap (mounted config file) or Secret/
@@ -34,7 +34,7 @@ type serverConfig struct {
 // flag defaults so existing invocations keep behaving identically.
 func defaultConfig() serverConfig {
 	return serverConfig{
-		DB:             "talondb.bbolt",
+		DB:             "tlndb.bbolt",
 		Socket:         "",
 		TCP:            "",
 		HTTP:           "",
@@ -93,13 +93,13 @@ func loadConfigFile(path string) (serverConfig, error) {
 // values parsed from the command line and setFlags records which flags the
 // user actually passed (via flag.Visit), so a flag left at its default does
 // not clobber an env/file value. configPath is the --config value; if empty
-// the TALONDB_CONFIG env var is consulted. getenv is injected for testing.
+// the TLNDB_CONFIG env var is consulted. getenv is injected for testing.
 func resolveConfig(flags serverConfig, setFlags map[string]bool, configPath string, getenv func(string) string) (serverConfig, error) {
 	cfg := defaultConfig()
 
-	// Config file (--config, else TALONDB_CONFIG).
+	// Config file (--config, else TLNDB_CONFIG).
 	if configPath == "" {
-		configPath = getenv("TALONDB_CONFIG")
+		configPath = getenv("TLNDB_CONFIG")
 	}
 	if configPath != "" {
 		fileCfg, err := loadConfigFile(configPath)
@@ -111,14 +111,14 @@ func resolveConfig(flags serverConfig, setFlags map[string]bool, configPath stri
 
 	// Environment variables.
 	cfg.overlay(serverConfig{
-		DB:             getenv("TALONDB_DB"),
-		Socket:         getenv("TALONDB_SOCKET"),
-		TCP:            getenv("TALONDB_TCP"),
-		HTTP:           getenv("TALONDB_HTTP"),
-		Metrics:        getenv("TALONDB_METRICS"),
-		Role:           getenv("TALONDB_ROLE"),
-		ReplicateFrom:  getenv("TALONDB_REPLICATE_FROM"),
-		OplogRetention: getenv("TALONDB_OPLOG_RETENTION"),
+		DB:             getenv("TLNDB_DB"),
+		Socket:         getenv("TLNDB_SOCKET"),
+		TCP:            getenv("TLNDB_TCP"),
+		HTTP:           getenv("TLNDB_HTTP"),
+		Metrics:        getenv("TLNDB_METRICS"),
+		Role:           getenv("TLNDB_ROLE"),
+		ReplicateFrom:  getenv("TLNDB_REPLICATE_FROM"),
+		OplogRetention: getenv("TLNDB_OPLOG_RETENTION"),
 	})
 
 	// Explicitly-set flags win — including setting a value back to empty.

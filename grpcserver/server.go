@@ -1,5 +1,5 @@
-// Package grpcserver implements the talondbpb.TalonDBServiceServer
-// interface as a thin translation layer over talondb.IndexedStore.
+// Package grpcserver implements the tlndbpb.TlnDBServiceServer
+// interface as a thin translation layer over tlndb.IndexedStore.
 // Every RPC method delegates to the matching store call and converts
 // errors via google.golang.org/grpc/status.
 package grpcserver
@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	talondb "github.com/opentalon/talon-db"
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	tlndb "github.com/opentalon/tln-db"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,7 +24,7 @@ import (
 // Replicate / Snapshot RPCs and the replication fields of Health. The
 // bboltstore.Store satisfies it; other backends leave it nil.
 type replicator interface {
-	TailOpLog(ctx context.Context, fromSeq uint64, fn func(*talondbpb.OpLogEntry) error) error
+	TailOpLog(ctx context.Context, fromSeq uint64, fn func(*tlndbpb.OpLogEntry) error) error
 	WriteSnapshot(w io.Writer, onSeq func(uint64) error) error
 	ReplicationEnabled() bool
 	AppliedSeq() uint64
@@ -32,13 +32,13 @@ type replicator interface {
 	MinSeq() uint64
 }
 
-// Server wraps a talondb.IndexedStore. An optional EventEmitter, when
+// Server wraps a tlndb.IndexedStore. An optional EventEmitter, when
 // non-nil, powers the Subscribe streaming RPC; clients can subscribe
 // to MutationEvents that fire post-commit.
 type Server struct {
-	talondbpb.UnimplementedTalonDBServiceServer
-	store    talondb.IndexedStore
-	events   *talondb.EventEmitter
+	tlndbpb.UnimplementedTlnDBServiceServer
+	store    tlndb.IndexedStore
+	events   *tlndb.EventEmitter
 	version  string
 	role     string
 	readOnly bool
@@ -62,7 +62,7 @@ func WithRole(role string) Option { return func(s *Server) { s.role = role } }
 // bboltstore.Store does); other backends get Unimplemented for the
 // vector surface. When the store satisfies replicator, the Replicate /
 // Snapshot RPCs are served.
-func New(store talondb.IndexedStore, events *talondb.EventEmitter, version string, opts ...Option) *Server {
+func New(store tlndb.IndexedStore, events *tlndb.EventEmitter, version string, opts ...Option) *Server {
 	srv := &Server{store: store, events: events, version: version, role: "standalone"}
 	if r, ok := store.(replicator); ok {
 		srv.repl = r
@@ -74,12 +74,12 @@ func New(store talondb.IndexedStore, events *talondb.EventEmitter, version strin
 }
 
 func (s *Server) roErr() error {
-	return status.Error(codes.FailedPrecondition, "talondb: read-only replica")
+	return status.Error(codes.FailedPrecondition, "tlndb: read-only replica")
 }
 
 // ---------- DocumentStore ----------
 
-func (s *Server) Put(ctx context.Context, req *talondbpb.PutRequest) (*emptypb.Empty, error) {
+func (s *Server) Put(ctx context.Context, req *tlndbpb.PutRequest) (*emptypb.Empty, error) {
 	if s.readOnly {
 		return nil, s.roErr()
 	}
@@ -89,18 +89,18 @@ func (s *Server) Put(ctx context.Context, req *talondbpb.PutRequest) (*emptypb.E
 	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) Get(ctx context.Context, req *talondbpb.GetRequest) (*talondbpb.GetResponse, error) {
+func (s *Server) Get(ctx context.Context, req *tlndbpb.GetRequest) (*tlndbpb.GetResponse, error) {
 	doc, err := s.store.Get(ctx, req.GetEntityId(), req.GetDocId())
-	if errors.Is(err, talondb.ErrNotFound) {
-		return &talondbpb.GetResponse{Found: false}, nil
+	if errors.Is(err, tlndb.ErrNotFound) {
+		return &tlndbpb.GetResponse{Found: false}, nil
 	}
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &talondbpb.GetResponse{Doc: doc, Found: true}, nil
+	return &tlndbpb.GetResponse{Doc: doc, Found: true}, nil
 }
 
-func (s *Server) Delete(ctx context.Context, req *talondbpb.DeleteRequest) (*emptypb.Empty, error) {
+func (s *Server) Delete(ctx context.Context, req *tlndbpb.DeleteRequest) (*emptypb.Empty, error) {
 	if s.readOnly {
 		return nil, s.roErr()
 	}
@@ -110,7 +110,7 @@ func (s *Server) Delete(ctx context.Context, req *talondbpb.DeleteRequest) (*emp
 	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) BatchPut(ctx context.Context, req *talondbpb.BatchPutRequest) (*emptypb.Empty, error) {
+func (s *Server) BatchPut(ctx context.Context, req *tlndbpb.BatchPutRequest) (*emptypb.Empty, error) {
 	if s.readOnly {
 		return nil, s.roErr()
 	}
@@ -126,7 +126,7 @@ func (s *Server) BatchPut(ctx context.Context, req *talondbpb.BatchPutRequest) (
 
 // ---------- IndexedStore ----------
 
-func (s *Server) Lookup(ctx context.Context, req *talondbpb.LookupRequest) (*talondbpb.DocIDList, error) {
+func (s *Server) Lookup(ctx context.Context, req *tlndbpb.LookupRequest) (*tlndbpb.DocIDList, error) {
 	set, err := s.store.Lookup(ctx, req.GetEntityId(), req.GetTerm())
 	if err != nil {
 		return nil, mapError(err)
@@ -134,7 +134,7 @@ func (s *Server) Lookup(ctx context.Context, req *talondbpb.LookupRequest) (*tal
 	return docIDListFromSet(set), nil
 }
 
-func (s *Server) LookupPrefix(ctx context.Context, req *talondbpb.LookupPrefixRequest) (*talondbpb.DocIDList, error) {
+func (s *Server) LookupPrefix(ctx context.Context, req *tlndbpb.LookupPrefixRequest) (*tlndbpb.DocIDList, error) {
 	set, err := s.store.LookupPrefix(ctx, req.GetEntityId(), req.GetPrefix())
 	if err != nil {
 		return nil, mapError(err)
@@ -142,11 +142,11 @@ func (s *Server) LookupPrefix(ctx context.Context, req *talondbpb.LookupPrefixRe
 	return docIDListFromSet(set), nil
 }
 
-func (s *Server) LookupNumericRange(ctx context.Context, req *talondbpb.NumericRangeRequest) (*talondbpb.DocIDList, error) {
+func (s *Server) LookupNumericRange(ctx context.Context, req *tlndbpb.NumericRangeRequest) (*tlndbpb.DocIDList, error) {
 	if math.IsNaN(req.GetMin()) || math.IsNaN(req.GetMax()) || math.IsInf(req.GetMin(), 0) || math.IsInf(req.GetMax(), 0) {
-		return nil, status.Error(codes.InvalidArgument, "talondb: NaN/Inf bound rejected")
+		return nil, status.Error(codes.InvalidArgument, "tlndb: NaN/Inf bound rejected")
 	}
-	set, err := s.store.LookupNumericRange(ctx, req.GetEntityId(), req.GetAttr(), req.GetMin(), req.GetMax(), talondb.RangeOpts{
+	set, err := s.store.LookupNumericRange(ctx, req.GetEntityId(), req.GetAttr(), req.GetMin(), req.GetMax(), tlndb.RangeOpts{
 		MinExclusive: req.GetMinExclusive(),
 		MaxExclusive: req.GetMaxExclusive(),
 	})
@@ -156,14 +156,14 @@ func (s *Server) LookupNumericRange(ctx context.Context, req *talondbpb.NumericR
 	return docIDListFromSet(set), nil
 }
 
-func (s *Server) WindowQuery(ctx context.Context, req *talondbpb.WindowRequest) (*talondbpb.WindowResponse, error) {
+func (s *Server) WindowQuery(ctx context.Context, req *tlndbpb.WindowRequest) (*tlndbpb.WindowResponse, error) {
 	events, err := s.store.WindowQuery(ctx, req.GetEntityId(), req.GetItemId(), req.GetTypes(), time.Duration(req.GetWindowNanos()))
 	if err != nil {
 		return nil, mapError(err)
 	}
-	out := &talondbpb.WindowResponse{Events: make([]*talondbpb.TemporalEvent, 0, len(events))}
+	out := &tlndbpb.WindowResponse{Events: make([]*tlndbpb.TemporalEvent, 0, len(events))}
 	for _, e := range events {
-		out.Events = append(out.Events, &talondbpb.TemporalEvent{
+		out.Events = append(out.Events, &tlndbpb.TemporalEvent{
 			DocId:       e.DocID,
 			Type:        e.Type,
 			AtUnixNanos: e.At.UnixNano(),
@@ -172,7 +172,7 @@ func (s *Server) WindowQuery(ctx context.Context, req *talondbpb.WindowRequest) 
 	return out, nil
 }
 
-func (s *Server) SequenceJoin(ctx context.Context, req *talondbpb.SequenceJoinRequest) (*talondbpb.SequenceJoinResponse, error) {
+func (s *Server) SequenceJoin(ctx context.Context, req *tlndbpb.SequenceJoinRequest) (*tlndbpb.SequenceJoinResponse, error) {
 	matches, err := s.store.SequenceJoin(
 		ctx,
 		req.GetEntityId(),
@@ -183,17 +183,17 @@ func (s *Server) SequenceJoin(ctx context.Context, req *talondbpb.SequenceJoinRe
 	if err != nil {
 		return nil, mapError(err)
 	}
-	out := &talondbpb.SequenceJoinResponse{Matches: make([]*talondbpb.SequenceMatch, 0, len(matches))}
+	out := &tlndbpb.SequenceJoinResponse{Matches: make([]*tlndbpb.SequenceMatch, 0, len(matches))}
 	for _, m := range matches {
-		events := make([]*talondbpb.TemporalEvent, 0, len(m.Events))
+		events := make([]*tlndbpb.TemporalEvent, 0, len(m.Events))
 		for _, e := range m.Events {
-			events = append(events, &talondbpb.TemporalEvent{
+			events = append(events, &tlndbpb.TemporalEvent{
 				DocId:       e.DocID,
 				Type:        e.Type,
 				AtUnixNanos: e.At.UnixNano(),
 			})
 		}
-		out.Matches = append(out.Matches, &talondbpb.SequenceMatch{
+		out.Matches = append(out.Matches, &tlndbpb.SequenceMatch{
 			ItemId: m.ItemID,
 			Events: events,
 		})
@@ -201,7 +201,7 @@ func (s *Server) SequenceJoin(ctx context.Context, req *talondbpb.SequenceJoinRe
 	return out, nil
 }
 
-func (s *Server) ClusterQuery(ctx context.Context, req *talondbpb.ClusterQueryRequest) (*talondbpb.ClusterQueryResponse, error) {
+func (s *Server) ClusterQuery(ctx context.Context, req *tlndbpb.ClusterQueryRequest) (*tlndbpb.ClusterQueryResponse, error) {
 	clusters, err := s.store.ClusterQuery(
 		ctx,
 		req.GetEntityId(),
@@ -213,17 +213,17 @@ func (s *Server) ClusterQuery(ctx context.Context, req *talondbpb.ClusterQueryRe
 	if err != nil {
 		return nil, mapError(err)
 	}
-	out := &talondbpb.ClusterQueryResponse{Clusters: make([]*talondbpb.TemporalCluster, 0, len(clusters))}
+	out := &tlndbpb.ClusterQueryResponse{Clusters: make([]*tlndbpb.TemporalCluster, 0, len(clusters))}
 	for _, c := range clusters {
-		events := make([]*talondbpb.TemporalEvent, 0, len(c.Events))
+		events := make([]*tlndbpb.TemporalEvent, 0, len(c.Events))
 		for _, e := range c.Events {
-			events = append(events, &talondbpb.TemporalEvent{
+			events = append(events, &tlndbpb.TemporalEvent{
 				DocId:       e.DocID,
 				Type:        e.Type,
 				AtUnixNanos: e.At.UnixNano(),
 			})
 		}
-		out.Clusters = append(out.Clusters, &talondbpb.TemporalCluster{
+		out.Clusters = append(out.Clusters, &tlndbpb.TemporalCluster{
 			FirstUnixNanos: c.First.UnixNano(),
 			LastUnixNanos:  c.Last.UnixNano(),
 			Events:         events,
@@ -232,12 +232,12 @@ func (s *Server) ClusterQuery(ctx context.Context, req *talondbpb.ClusterQueryRe
 	return out, nil
 }
 
-func (s *Server) GroupCount(ctx context.Context, req *talondbpb.GroupRequest) (*talondbpb.GroupResponse, error) {
+func (s *Server) GroupCount(ctx context.Context, req *tlndbpb.GroupRequest) (*tlndbpb.GroupResponse, error) {
 	g, err := s.store.GroupCount(ctx, req.GetEntityId(), req.GetItemId(), req.GetAttr(), req.GetValue())
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &talondbpb.GroupResponse{
+	return &tlndbpb.GroupResponse{
 		Count:          int64(g.Count),
 		FirstUnixNanos: g.First.UnixNano(),
 		LastUnixNanos:  g.Last.UnixNano(),
@@ -245,12 +245,12 @@ func (s *Server) GroupCount(ctx context.Context, req *talondbpb.GroupRequest) (*
 	}, nil
 }
 
-func (s *Server) Stats(ctx context.Context, req *talondbpb.StatsRequest) (*talondbpb.StatsResponse, error) {
+func (s *Server) Stats(ctx context.Context, req *tlndbpb.StatsRequest) (*tlndbpb.StatsResponse, error) {
 	st, err := s.store.Stats(ctx, req.GetEntityId(), req.GetAttr())
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &talondbpb.StatsResponse{
+	return &tlndbpb.StatsResponse{
 		Count: st.Count,
 		Mean:  st.Mean,
 		M2:    st.M2,
@@ -259,39 +259,39 @@ func (s *Server) Stats(ctx context.Context, req *talondbpb.StatsRequest) (*talon
 	}, nil
 }
 
-func (s *Server) LastSeen(ctx context.Context, req *talondbpb.LastSeenRequest) (*talondbpb.LastSeenResponse, error) {
+func (s *Server) LastSeen(ctx context.Context, req *tlndbpb.LastSeenRequest) (*tlndbpb.LastSeenResponse, error) {
 	t, ok, err := s.store.LastSeen(ctx, req.GetEntityId(), req.GetItemId(), req.GetRecordType())
 	if err != nil {
 		return nil, mapError(err)
 	}
-	out := &talondbpb.LastSeenResponse{Found: ok}
+	out := &tlndbpb.LastSeenResponse{Found: ok}
 	if ok {
 		out.AtUnixNanos = t.UnixNano()
 	}
 	return out, nil
 }
 
-func (s *Server) LastWritten(ctx context.Context, req *talondbpb.LastWrittenRequest) (*talondbpb.LastWrittenResponse, error) {
+func (s *Server) LastWritten(ctx context.Context, req *tlndbpb.LastWrittenRequest) (*tlndbpb.LastWrittenResponse, error) {
 	t, ok, err := s.store.LastWritten(ctx, req.GetEntityId(), req.GetDocId())
 	if err != nil {
 		return nil, mapError(err)
 	}
-	out := &talondbpb.LastWrittenResponse{Found: ok}
+	out := &tlndbpb.LastWrittenResponse{Found: ok}
 	if ok {
 		out.AtUnixNanos = t.UnixNano()
 	}
 	return out, nil
 }
 
-func (s *Server) Ancestors(ctx context.Context, req *talondbpb.AncestorsRequest) (*talondbpb.StringList, error) {
+func (s *Server) Ancestors(ctx context.Context, req *tlndbpb.AncestorsRequest) (*tlndbpb.StringList, error) {
 	chain, err := s.store.Ancestors(ctx, req.GetEntityId(), req.GetCategoryId())
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &talondbpb.StringList{Items: chain}, nil
+	return &tlndbpb.StringList{Items: chain}, nil
 }
 
-func (s *Server) Descendants(ctx context.Context, req *talondbpb.DescendantsRequest) (*talondbpb.DocIDList, error) {
+func (s *Server) Descendants(ctx context.Context, req *tlndbpb.DescendantsRequest) (*tlndbpb.DocIDList, error) {
 	set, err := s.store.Descendants(ctx, req.GetEntityId(), req.GetRootId())
 	if err != nil {
 		return nil, mapError(err)
@@ -313,17 +313,17 @@ const subscribeQueueDepth = 1024
 // server-side. The stream terminates when the client cancels its
 // context, the server shuts down, or the subscriber falls behind by
 // more than subscribeQueueDepth events.
-func (s *Server) Subscribe(req *talondbpb.SubscribeRequest, stream talondbpb.TalonDBService_SubscribeServer) error {
+func (s *Server) Subscribe(req *tlndbpb.SubscribeRequest, stream tlndbpb.TlnDBService_SubscribeServer) error {
 	if s.events == nil {
-		return status.Error(codes.Unimplemented, "talondb: server constructed without an EventEmitter")
+		return status.Error(codes.Unimplemented, "tlndb: server constructed without an EventEmitter")
 	}
 	ctx := stream.Context()
-	ch := make(chan talondb.MutationEvent, subscribeQueueDepth)
+	ch := make(chan tlndb.MutationEvent, subscribeQueueDepth)
 
 	entityFilter := req.GetEntityId()
 	prefixFilter := req.GetDocIdPrefix()
 
-	unsubscribe := s.events.Subscribe(func(_ context.Context, ev talondb.MutationEvent) {
+	unsubscribe := s.events.Subscribe(func(_ context.Context, ev tlndb.MutationEvent) {
 		if entityFilter != "" && ev.EntityID != entityFilter {
 			return
 		}
@@ -352,9 +352,9 @@ func (s *Server) Subscribe(req *talondbpb.SubscribeRequest, stream talondbpb.Tal
 			return ctx.Err()
 		case ev, ok := <-ch:
 			if !ok {
-				return status.Error(codes.ResourceExhausted, "talondb: subscriber buffer overflow; reconnect to resync")
+				return status.Error(codes.ResourceExhausted, "tlndb: subscriber buffer overflow; reconnect to resync")
 			}
-			if err := stream.Send(&talondbpb.MutationEvent{
+			if err := stream.Send(&tlndbpb.MutationEvent{
 				Kind:        mutationKindToProto(ev.Kind),
 				EntityId:    ev.EntityID,
 				DocId:       ev.DocID,
@@ -368,31 +368,31 @@ func (s *Server) Subscribe(req *talondbpb.SubscribeRequest, stream talondbpb.Tal
 	}
 }
 
-func mutationKindToProto(k talondb.EventKind) talondbpb.MutationEventKind {
+func mutationKindToProto(k tlndb.EventKind) tlndbpb.MutationEventKind {
 	switch k {
-	case talondb.EventAssert:
-		return talondbpb.MutationEventKind_MUTATION_EVENT_KIND_ASSERT
-	case talondb.EventChange:
-		return talondbpb.MutationEventKind_MUTATION_EVENT_KIND_CHANGE
-	case talondb.EventRetract:
-		return talondbpb.MutationEventKind_MUTATION_EVENT_KIND_RETRACT
+	case tlndb.EventAssert:
+		return tlndbpb.MutationEventKind_MUTATION_EVENT_KIND_ASSERT
+	case tlndb.EventChange:
+		return tlndbpb.MutationEventKind_MUTATION_EVENT_KIND_CHANGE
+	case tlndb.EventRetract:
+		return tlndbpb.MutationEventKind_MUTATION_EVENT_KIND_RETRACT
 	}
-	return talondbpb.MutationEventKind_MUTATION_EVENT_KIND_UNSPECIFIED
+	return tlndbpb.MutationEventKind_MUTATION_EVENT_KIND_UNSPECIFIED
 }
 
 // ---------- Replication ----------
 
-func (s *Server) Replicate(req *talondbpb.ReplicateRequest, stream talondbpb.TalonDBService_ReplicateServer) error {
+func (s *Server) Replicate(req *tlndbpb.ReplicateRequest, stream tlndbpb.TlnDBService_ReplicateServer) error {
 	if s.repl == nil || !s.repl.ReplicationEnabled() {
-		return status.Error(codes.Unimplemented, "talondb: replication not enabled")
+		return status.Error(codes.Unimplemented, "tlndb: replication not enabled")
 	}
-	err := s.repl.TailOpLog(stream.Context(), req.GetFromSeq(), func(e *talondbpb.OpLogEntry) error {
+	err := s.repl.TailOpLog(stream.Context(), req.GetFromSeq(), func(e *tlndbpb.OpLogEntry) error {
 		return stream.Send(e)
 	})
 	switch {
 	case err == nil, errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 		return err
-	case errors.Is(err, talondb.ErrSnapshotRequired):
+	case errors.Is(err, tlndb.ErrSnapshotRequired):
 		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		return status.Error(codes.Internal, err.Error())
@@ -402,7 +402,7 @@ func (s *Server) Replicate(req *talondbpb.ReplicateRequest, stream talondbpb.Tal
 // snapshotWriter chunks bbolt's WriteTo output into SnapshotChunk
 // messages on the stream.
 type snapshotWriter struct {
-	stream talondbpb.TalonDBService_SnapshotServer
+	stream tlndbpb.TlnDBService_SnapshotServer
 }
 
 func (w snapshotWriter) Write(p []byte) (int, error) {
@@ -412,19 +412,19 @@ func (w snapshotWriter) Write(p []byte) (int, error) {
 		if end > len(p) {
 			end = len(p)
 		}
-		if err := w.stream.Send(&talondbpb.SnapshotChunk{Data: p[off:end]}); err != nil {
+		if err := w.stream.Send(&tlndbpb.SnapshotChunk{Data: p[off:end]}); err != nil {
 			return off, err
 		}
 	}
 	return len(p), nil
 }
 
-func (s *Server) Snapshot(_ *talondbpb.SnapshotRequest, stream talondbpb.TalonDBService_SnapshotServer) error {
+func (s *Server) Snapshot(_ *tlndbpb.SnapshotRequest, stream tlndbpb.TlnDBService_SnapshotServer) error {
 	if s.repl == nil || !s.repl.ReplicationEnabled() {
-		return status.Error(codes.Unimplemented, "talondb: replication not enabled")
+		return status.Error(codes.Unimplemented, "tlndb: replication not enabled")
 	}
 	err := s.repl.WriteSnapshot(snapshotWriter{stream}, func(seq uint64) error {
-		return stream.Send(&talondbpb.SnapshotChunk{Seq: seq})
+		return stream.Send(&tlndbpb.SnapshotChunk{Seq: seq})
 	})
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
@@ -434,8 +434,8 @@ func (s *Server) Snapshot(_ *talondbpb.SnapshotRequest, stream talondbpb.TalonDB
 
 // ---------- Operational ----------
 
-func (s *Server) Health(ctx context.Context, _ *emptypb.Empty) (*talondbpb.HealthResponse, error) {
-	resp := &talondbpb.HealthResponse{Status: "ok", Version: s.version, Role: s.role}
+func (s *Server) Health(ctx context.Context, _ *emptypb.Empty) (*tlndbpb.HealthResponse, error) {
+	resp := &tlndbpb.HealthResponse{Status: "ok", Version: s.version, Role: s.role}
 	if s.repl != nil {
 		resp.AppliedSeq = s.repl.AppliedSeq()
 		resp.CurrentSeq = s.repl.CurrentSeq()
@@ -446,12 +446,12 @@ func (s *Server) Health(ctx context.Context, _ *emptypb.Empty) (*talondbpb.Healt
 
 // ---------- helpers ----------
 
-func docIDListFromSet(set talondb.DocIDSet) *talondbpb.DocIDList {
+func docIDListFromSet(set tlndb.DocIDSet) *tlndbpb.DocIDList {
 	ids := collectDocIDs(set)
-	return &talondbpb.DocIDList{DocIds: ids}
+	return &tlndbpb.DocIDList{DocIds: ids}
 }
 
-func collectDocIDs(set talondb.DocIDSet) []string {
+func collectDocIDs(set tlndb.DocIDSet) []string {
 	if set == nil {
 		return nil
 	}
@@ -467,10 +467,10 @@ func mapError(err error) error {
 	if err == nil {
 		return nil
 	}
-	if errors.Is(err, talondb.ErrInvalidEntityID) || errors.Is(err, talondb.ErrInvalidValue) {
+	if errors.Is(err, tlndb.ErrInvalidEntityID) || errors.Is(err, tlndb.ErrInvalidValue) {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
-	if errors.Is(err, talondb.ErrNotFound) {
+	if errors.Is(err, tlndb.ErrNotFound) {
 		return status.Error(codes.NotFound, err.Error())
 	}
 	return status.Error(codes.Internal, err.Error())

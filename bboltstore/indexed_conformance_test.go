@@ -3,15 +3,15 @@ package bboltstore_test
 import (
 	"testing"
 
-	talondb "github.com/opentalon/talon-db"
-	"github.com/opentalon/talon-db/talondbtest"
+	tlndb "github.com/opentalon/tln-db"
+	"github.com/opentalon/tln-db/tlndbtest"
 )
 
 // TestIndexedConformance wires the bbolt-backed Store into the
 // backend-agnostic IndexedSuite. Specs are documented in
-// talondbtest/indexed.go.
+// tlndbtest/indexed.go.
 func TestIndexedConformance(t *testing.T) {
-	talondbtest.IndexedSuite(t, func(t *testing.T) talondb.IndexedStore {
+	tlndbtest.IndexedSuite(t, func(t *testing.T) tlndb.IndexedStore {
 		return newStore(t)
 	})
 }

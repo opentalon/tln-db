@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 
 	bolt "go.etcd.io/bbolt"
 	"google.golang.org/protobuf/proto"
@@ -13,7 +13,7 @@ import (
 // Replication op-log layout (global, not per-tenant):
 //
 //	oplog       bucket: key = 8-byte big-endian uint64 seq
-//	                    value = proto-marshaled talondbpb.OpLogEntry
+//	                    value = proto-marshaled tlndbpb.OpLogEntry
 //	oplog_meta  bucket: "next_seq" -> next uint64 to assign
 //	                    "min_seq"  -> earliest retained seq (0 = none yet)
 //	repl_meta   bucket: "applied_seq" -> last seq a follower has applied
@@ -59,7 +59,7 @@ func writeMetaUint64(tx *bolt.Tx, bucket, key string, v uint64) error {
 
 // appendOpLog assigns the next seq to entry, writes it, and advances
 // oplog_meta. Used on the leader write path. Returns the assigned seq.
-func appendOpLog(tx *bolt.Tx, entry *talondbpb.OpLogEntry) (uint64, error) {
+func appendOpLog(tx *bolt.Tx, entry *tlndbpb.OpLogEntry) (uint64, error) {
 	next := readMetaUint64(tx, oplogMetaBucket, nextSeqKey)
 	if next == 0 {
 		next = 1
@@ -81,7 +81,7 @@ func appendOpLog(tx *bolt.Tx, entry *talondbpb.OpLogEntry) (uint64, error) {
 
 // putOpLogEntryAt writes an entry verbatim at entry.Seq (follower apply)
 // and forces next_seq/min_seq to stay consistent with the leader.
-func putOpLogEntryAt(tx *bolt.Tx, entry *talondbpb.OpLogEntry) error {
+func putOpLogEntryAt(tx *bolt.Tx, entry *tlndbpb.OpLogEntry) error {
 	if err := putOpLogEntry(tx, entry); err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func putOpLogEntryAt(tx *bolt.Tx, entry *talondbpb.OpLogEntry) error {
 	return nil
 }
 
-func putOpLogEntry(tx *bolt.Tx, entry *talondbpb.OpLogEntry) error {
+func putOpLogEntry(tx *bolt.Tx, entry *tlndbpb.OpLogEntry) error {
 	b, err := tx.CreateBucketIfNotExists([]byte(oplogBucket))
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func putOpLogEntry(tx *bolt.Tx, entry *talondbpb.OpLogEntry) error {
 // readOpLogFrom iterates entries with seq >= fromSeq in order, invoking
 // fn for each. It returns the seq of the last entry passed to fn (0 if
 // none). Runs inside a read tx supplied by the caller.
-func readOpLogFrom(tx *bolt.Tx, fromSeq uint64, fn func(*talondbpb.OpLogEntry) error) (uint64, error) {
+func readOpLogFrom(tx *bolt.Tx, fromSeq uint64, fn func(*tlndbpb.OpLogEntry) error) (uint64, error) {
 	b := tx.Bucket([]byte(oplogBucket))
 	if b == nil {
 		return 0, nil
@@ -119,7 +119,7 @@ func readOpLogFrom(tx *bolt.Tx, fromSeq uint64, fn func(*talondbpb.OpLogEntry) e
 	c := b.Cursor()
 	var last uint64
 	for k, v := c.Seek(seqKey(fromSeq)); k != nil; k, v = c.Next() {
-		entry := &talondbpb.OpLogEntry{}
+		entry := &tlndbpb.OpLogEntry{}
 		if err := proto.Unmarshal(v, entry); err != nil {
 			return last, fmt.Errorf("bboltstore: unmarshal oplog entry: %w", err)
 		}

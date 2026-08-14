@@ -34,7 +34,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opentalon/talon-db/bboltstore"
+	"github.com/opentalon/tln-db/bboltstore"
 )
 
 func benchOpen(b *testing.B) *bboltstore.Store {

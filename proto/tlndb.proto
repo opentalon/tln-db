@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-package opentalon.talondb.v1;
+package opentalon.tlndb.v1;
 
-option go_package = "github.com/opentalon/talon-db/proto/talondbpb";
+option go_package = "github.com/opentalon/tln-db/proto/tlndbpb";
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
 
-// TalonDBService is the wire surface exposed by `talondb-server`. The
-// gRPC service maps 1:1 to the talondb.IndexedStore Go interface.
+// TlnDBService is the wire surface exposed by `tlndb-server`. The
+// gRPC service maps 1:1 to the tlndb.IndexedStore Go interface.
 //
 // Two transports speak this schema:
 //   - gRPC, the primary protocol (Unix socket default, TCP optional).
@@ -16,7 +16,7 @@ import "google/protobuf/struct.proto";
 //     curl-based debugging and non-Go clients. The HTTP paths follow
 //     the Postgres-flavoured convention of operation-as-path, request
 //     body as JSON.
-service TalonDBService {
+service TlnDBService {
   // DocumentStore surface (entityID, docID) → bytes
   rpc Put(PutRequest) returns (google.protobuf.Empty);
   rpc Get(GetRequest) returns (GetResponse);
@@ -41,7 +41,7 @@ service TalonDBService {
   // Query is the server-side composer for structured queries: anchor
   // narrowing via the inverted index + per-doc clause evaluation. Lets
   // non-Go clients run a multi-clause query in one round-trip instead
-  // of replicating the talon-language adapter's composition logic.
+  // of replicating the tln-language adapter's composition logic.
   // Supported clauses: Pattern, Predicate, Or, Not, FullText.
   rpc Query(QueryRequest) returns (QueryResponse);
 
@@ -67,7 +67,7 @@ service TalonDBService {
   rpc ClusterQuery(ClusterQueryRequest) returns (ClusterQueryResponse);
 
   // Vector index — per-scope HNSW with dimension locked on first
-  // insert. talon-db hosts one logical index per (entity, scope), so a
+  // insert. tln-db hosts one logical index per (entity, scope), so a
   // single tenant can hold multiple embedding models with different
   // dimensions side-by-side without cross-contamination.
   rpc VectorInsert(VectorInsertRequest) returns (google.protobuf.Empty);
@@ -300,7 +300,7 @@ message SnapshotChunk {
 
 // ---------- Mutation events ----------
 
-// MutationEventKind mirrors talon-language's factstore.EventKind so the
+// MutationEventKind mirrors tln-language's factstore.EventKind so the
 // adapter can map straight across.
 enum MutationEventKind {
   MUTATION_EVENT_KIND_UNSPECIFIED = 0;

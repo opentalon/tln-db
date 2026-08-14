@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentalon/talon-db/proto/talondbpb"
+	"github.com/opentalon/tln-db/proto/tlndbpb"
 )
 
 func TestGRPCSequenceJoinDetectsInOrder(t *testing.T) {
@@ -21,7 +21,7 @@ func TestGRPCSequenceJoinDetectsInOrder(t *testing.T) {
 	putEvent(t, c, "e3", "truck-2", "fault", base) // wrong order
 	putEvent(t, c, "e4", "truck-2", "inspect", base.Add(5*day))
 
-	resp, err := c.SequenceJoin(ctx, &talondbpb.SequenceJoinRequest{
+	resp, err := c.SequenceJoin(ctx, &tlndbpb.SequenceJoinRequest{
 		EntityId:    "tenant-a",
 		Steps:       []string{"inspect", "fault"},
 		WindowNanos: int64(30 * day),
@@ -53,7 +53,7 @@ func TestGRPCSequenceJoinWindowFilters(t *testing.T) {
 	putEvent(t, c, "e1", "truck-1", "inspect", base)
 	putEvent(t, c, "e2", "truck-1", "fault", base.Add(200*day))
 
-	resp, err := c.SequenceJoin(ctx, &talondbpb.SequenceJoinRequest{
+	resp, err := c.SequenceJoin(ctx, &tlndbpb.SequenceJoinRequest{
 		EntityId:    "tenant-a",
 		Steps:       []string{"inspect", "fault"},
 		WindowNanos: int64(30 * day),
@@ -79,7 +79,7 @@ func TestGRPCSequenceJoinItemFilter(t *testing.T) {
 	putEvent(t, c, "e4", "truck-2", "fault", base.Add(time.Hour))
 
 	// Restrict to truck-2 only.
-	resp, err := c.SequenceJoin(ctx, &talondbpb.SequenceJoinRequest{
+	resp, err := c.SequenceJoin(ctx, &tlndbpb.SequenceJoinRequest{
 		EntityId: "tenant-a",
 		ItemIds:  []string{"truck-2"},
 		Steps:    []string{"inspect", "fault"},

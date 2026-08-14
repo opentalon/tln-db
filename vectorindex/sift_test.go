@@ -11,13 +11,13 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/opentalon/talon-db/vectorindex"
+	"github.com/opentalon/tln-db/vectorindex"
 )
 
 // SIFT-1M recall conformance.
 //
 // To run this test, fetch the SIFT-1M dataset and point
-// TALONDB_SIFT_PATH at the directory that contains:
+// TLNDB_SIFT_PATH at the directory that contains:
 //
 //	sift_base.fvecs     1,000,000 × 128-dim float32 (~516 MB)
 //	sift_query.fvecs       10,000 × 128-dim float32
@@ -30,15 +30,15 @@ import (
 //
 // Untar into one directory and pass that directory:
 //
-//	TALONDB_SIFT_PATH=/path/to/sift go test -run SIFT -count=1 ./vectorindex/
+//	TLNDB_SIFT_PATH=/path/to/sift go test -run SIFT -count=1 ./vectorindex/
 //
 // Acceptance: recall@10 ≥ 0.9 over the first 100 queries. We cap the
 // query count so the test runs in ~minutes (full 10k queries take an
-// order of magnitude longer); set TALONDB_SIFT_QUERIES to override.
+// order of magnitude longer); set TLNDB_SIFT_QUERIES to override.
 //
 // On laptop-class hardware the per-insert cost (HNSW + bbolt commit
 // in lockstep) makes the full 1M insert phase ~hours; the recall
-// pipeline itself is fast. Set TALONDB_SIFT_BASE_LIMIT to a smaller
+// pipeline itself is fast. Set TLNDB_SIFT_BASE_LIMIT to a smaller
 // integer to cap the base corpus — recall measurement is then only
 // meaningful relative to that truncated subset (groundtruth ids
 // outside the subset are dropped from the per-query top-K before
@@ -48,25 +48,25 @@ import (
 // {float32|int32}> records, little-endian.
 
 const (
-	siftPathEnv       = "TALONDB_SIFT_PATH"
-	siftQueriesEnv    = "TALONDB_SIFT_QUERIES"
-	siftBaseLimitEnv  = "TALONDB_SIFT_BASE_LIMIT"
-	siftRecallMinEnv  = "TALONDB_SIFT_RECALL_MIN"
+	siftPathEnv       = "TLNDB_SIFT_PATH"
+	siftQueriesEnv    = "TLNDB_SIFT_QUERIES"
+	siftBaseLimitEnv  = "TLNDB_SIFT_BASE_LIMIT"
+	siftRecallMinEnv  = "TLNDB_SIFT_RECALL_MIN"
 	siftDim           = 128
 	siftDefaultK      = 10
 	siftDefaultQ      = 100
-	siftDefaultRecall = 0.9 // production target from opentalon/talon-db#12
+	siftDefaultRecall = 0.9 // production target from opentalon/tln-db#12
 )
 
 // Recall threshold for the SIFT test.
 //
-// The talon-db#12 acceptance criterion is `recall@10 ≥ 0.9`. We hit
+// The tln-db#12 acceptance criterion is `recall@10 ≥ 0.9`. We hit
 // it by pinning coder/hnsw to a post-2026-06-22 main commit; v0.6.1
 // shipped without three recall-relevant fixes (efSearch-bounded
 // termination, replenish() honouring the configured metric, heap
 // ordering) and capped around `recall@10 ≈ 0.30` on SIFT.
 //
-// Override via TALONDB_SIFT_RECALL_MIN to relax the bar during
+// Override via TLNDB_SIFT_RECALL_MIN to relax the bar during
 // experiments with alternative HNSW backends.
 
 func TestSIFTRecall(t *testing.T) {
@@ -114,7 +114,7 @@ func TestSIFTRecall(t *testing.T) {
 	// pipeline talks to the in-memory index directly. We bump
 	// EfSearch + M from coder/hnsw v0.6.1's tiny defaults — the
 	// shipped values target tens-of-vectors workloads, not SIFT.
-	// M=16 / EfSearch=200 hits the talon-db#12 0.9 recall target on
+	// M=16 / EfSearch=200 hits the tln-db#12 0.9 recall target on
 	// SIFT-5K with the post-2026-06-22 coder/hnsw main pin, and stays
 	// fast enough that the test runs in tens of seconds rather than
 	// minutes on laptop-class hardware.
