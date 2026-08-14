@@ -7,6 +7,7 @@ require (
 	github.com/coder/hnsw v0.6.2-0.20260622133054-36cab6028fed
 	github.com/golang/snappy v1.0.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
+	github.com/opentalon/tln-language v0.7.0
 	github.com/prometheus/client_golang v1.24.1
 	go.etcd.io/bbolt v1.5.0
 	google.golang.org/grpc v1.81.1
