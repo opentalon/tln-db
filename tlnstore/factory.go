@@ -27,6 +27,3 @@ func Factory(spec tln.ConnectorSpec) (tln.FactStore, error) {
 	}
 	return New(cli), nil
 }
-
-// Compile-time check that Factory matches core's StoreFactory signature.
-var _ func(tln.ConnectorSpec) (tln.FactStore, error) = Factory

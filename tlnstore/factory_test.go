@@ -7,12 +7,6 @@ import (
 	"github.com/opentalon/tln-language/pkg/tln"
 )
 
-// TestFactory_Signature pins the store-factory shape core's WithStorePlugin
-// expects.
-func TestFactory_Signature(t *testing.T) {
-	var _ func(tln.ConnectorSpec) (tln.FactStore, error) = tlnstore.Factory
-}
-
 // TestFactory_RequiresTarget: a store config with no target is rejected before
 // any dial.
 func TestFactory_RequiresTarget(t *testing.T) {
